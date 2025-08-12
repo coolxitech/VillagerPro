@@ -1,0 +1,15 @@
+name: VillagePro
+version: 1.0
+main: cn.popcraft.villagepro.VillagePro
+api-version: 1.19
+commands:
+  village:
+    description: 村庄系统主命令
+    aliases: [v]
+    usage: /village
+  recruit:
+    description: 招募一个村民
+    usage: /recruit
+  upgrade:
+    description: 打开村民升级界面
+    usage: /upgrade

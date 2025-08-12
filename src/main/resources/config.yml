@@ -1,0 +1,152 @@
+# VillagePro 配置文件
+
+# 村民升级配置
+upgrades:
+  TRADE:
+    1:
+      cost-money: 1000
+      cost-diamonds: 0
+      cost-items:
+        EMERALD: 10
+    2:
+      cost-money: 2000
+      cost-diamonds: 0
+      cost-items:
+        EMERALD: 20
+        GOLD_INGOT: 5
+    3:
+      cost-money: 3000
+      cost-diamonds: 1
+      cost-items:
+        EMERALD: 30
+        GOLD_INGOT: 10
+    4:
+      cost-money: 4000
+      cost-diamonds: 2
+      cost-items:
+        EMERALD: 40
+        GOLD_INGOT: 15
+        DIAMOND: 1
+    5:
+      cost-money: 5000
+      cost-diamonds: 3
+      cost-items:
+        EMERALD: 50
+        GOLD_INGOT: 20
+        DIAMOND: 2
+  HEALTH:
+    1:
+      cost-money: 1000
+      cost-diamonds: 0
+      cost-items:
+        GOLDEN_APPLE: 5
+    2:
+      cost-money: 2000
+      cost-diamonds: 0
+      cost-items:
+        GOLDEN_APPLE: 10
+        GLISTERING_MELON_SLICE: 5
+    3:
+      cost-money: 3000
+      cost-diamonds: 1
+      cost-items:
+        GOLDEN_APPLE: 15
+        GLISTERING_MELON_SLICE: 10
+    4:
+      cost-money: 4000
+      cost-diamonds: 2
+      cost-items:
+        GOLDEN_APPLE: 20
+        GLISTERING_MELON_SLICE: 15
+        DIAMOND: 1
+    5:
+      cost-money: 5000
+      cost-diamonds: 3
+      cost-items:
+        GOLDEN_APPLE: 25
+        GLISTERING_MELON_SLICE: 20
+        DIAMOND: 2
+  SPEED:
+    1:
+      cost-money: 1000
+      cost-diamonds: 0
+      cost-items:
+        SUGAR: 20
+    2:
+      cost-money: 2000
+      cost-diamonds: 0
+      cost-items:
+        SUGAR: 40
+        RABBIT_FOOT: 2
+    3:
+      cost-money: 3000
+      cost-diamonds: 1
+      cost-items:
+        SUGAR: 60
+        RABBIT_FOOT: 4
+    4:
+      cost-money: 4000
+      cost-diamonds: 2
+      cost-items:
+        SUGAR: 80
+        RABBIT_FOOT: 6
+        DIAMOND: 1
+    5:
+      cost-money: 5000
+      cost-diamonds: 3
+      cost-items:
+        SUGAR: 100
+        RABBIT_FOOT: 8
+        DIAMOND: 2
+  PROTECTION:
+    1:
+      cost-money: 1000
+      cost-diamonds: 0
+      cost-items:
+        IRON_INGOT: 10
+    2:
+      cost-money: 2000
+      cost-diamonds: 0
+      cost-items:
+        IRON_INGOT: 20
+        OBSIDIAN: 4
+    3:
+      cost-money: 3000
+      cost-diamonds: 1
+      cost-items:
+        IRON_INGOT: 30
+        OBSIDIAN: 8
+    4:
+      cost-money: 4000
+      cost-diamonds: 2
+      cost-items:
+        IRON_INGOT: 40
+        OBSIDIAN: 12
+        DIAMOND: 1
+    5:
+      cost-money: 5000
+      cost-diamonds: 3
+      cost-items:
+        IRON_INGOT: 50
+        OBSIDIAN: 16
+        DIAMOND: 2
+
+# 村民招募配置
+recruit:
+  cost-money: 5000
+  max-villagers: 5
+  cost-items:
+    EMERALD: 10
+    GOLDEN_APPLE: 2
+    IRON_INGOT: 5
+
+# 消息配置
+messages:
+  prefix: "&a[VillagePro] &r"
+  no-permission: "&c你没有权限执行此命令!"
+  recruit-success: "&a成功招募了一名村民!"
+  recruit-failed: "&c招募失败，请确保你有足够的资源!"
+  max-villagers-reached: "&c你已达到最大村民数量限制!"
+  upgrade-success: "&a成功升级了村民的 {type} 能力到 {level} 级!"
+  upgrade-failed: "&c升级失败，请确保你有足够的资源!"
+  max-level-reached: "&c该能力已达到最高等级!"
