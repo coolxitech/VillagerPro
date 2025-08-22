@@ -28,6 +28,9 @@ public class VillagerUtils {
      * @return 所有者UUID，如果没有则返回null
      */
     public static UUID getOwner(Villager villager) {
+        if (villager == null) {
+            return null;
+        }
         PersistentDataContainer pdc = villager.getPersistentDataContainer();
         String uuidStr = pdc.get(OWNER_KEY, PersistentDataType.STRING);
         return uuidStr != null ? UUID.fromString(uuidStr) : null;

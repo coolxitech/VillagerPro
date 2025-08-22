@@ -1,0 +1,89 @@
+# VillagePro 消息配置文件
+
+prefix: "&a[VillagePro] &r"
+no-permission: "&c你没有权限执行此命令!"
+
+# 村民相关消息
+villager:
+  name: "&a{player}的村民"
+
+# 配置相关消息
+config:
+  invalid-upgrade-type: "未知的升级类型: {type}"
+  invalid-upgrade-level: "无效的升级等级: {level}"
+
+# GUI相关消息
+gui:
+  upgrade-title: "&6村民升级"
+  confirm-prefix: "&6确认升级"
+  confirm-title: "&6确认升级 &e{type}"
+  upgrade-info: "&e升级信息"
+  current-level: "&7当前等级: &e{level}"
+  target-level: "&7目标等级: &e{level}"
+  cost: "&7升级费用:"
+  cost-money: "&7- &e{amount} &7金币"
+  cost-diamond: "&7- &e{amount} &7钻石"
+  cost-item: "&7- &e{amount} &7个 &e{item}"
+  confirm: "&a确认"
+  cancel: "&c取消"
+  close: "&c关闭"
+  level-display: "&7等级: &e{level}&7/&e{max}"
+  click-to-upgrade: "&a点击升级"
+
+# 村民招募相关消息
+recruit:
+  success: "&a成功招募了一名村民!"
+  failed: "&c招募失败，请确保你有足够的资源!"
+  max-villagers-reached: "&c你已达到最大村民数量限制!"
+
+# 村民升级相关消息
+upgrade:
+  success: "&a成功升级了村民的 {type} 能力到 {level} 级!"
+  failed: "&c升级失败，请确保你有足够的资源!"
+  max-level-reached: "&c该能力已达到最高等级!"
+  
+# 村民跟随相关消息
+follow:
+  start: "&a村民开始跟随你"
+  stop: "&a村民停止跟随"
+  stay: "&a村民将停留在此处"
+  free: "&a村民将自由活动"
+  request: "&a发送 y 让村民跟随，n 取消跟随"
+  cancel: "&a村民将不会跟随你"
+
+# 作物相关消息
+crop:
+  collected: "&a你的村民收集了 {amount} 个 {crop}!"
+  withdraw-success: "&a成功取出 {amount} 个 {crop}!"
+  withdraw-failed: "&c取出失败，请确保你有足够的 {crop}!"
+  storage-empty: "&c你的作物存储是空的!"
+  invalid-crop-type: "无效的作物类型: {type}"
+
+
+
+# 升级描述
+upgrade:
+  trade:
+    description: "提升村民交易效率"
+  health:
+    description: "提升村民生命值"
+  speed:
+    description: "提升村民移动速度"
+  protection:
+    description: "提升村民抗性"
+  restock-speed:
+    description: "提升村民补货速度"
+  crop-growth:
+    description: "提升作物生长速度和收获量"
+  trade-amount:
+    description: "提升村民交易货物数量"
+
+# 升级类型名称
+upgrade-types:
+  TRADE: "交易效率"
+  HEALTH: "生命值"
+  SPEED: "移动速度"
+  PROTECTION: "保护抗性"
+  RESTOCK_SPEED: "补货速度"
+  CROP_GROWTH: "作物生长"
+  TRADE_AMOUNT: "交易数量"

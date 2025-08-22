@@ -3,7 +3,10 @@ package cn.popcraft.villagepro.manager;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.UpgradeType;
 import cn.popcraft.villagepro.model.Village;
+import cn.popcraft.villagepro.model.VillageUpgrade;
 import cn.popcraft.villagepro.model.VillagerEntity;
+import cn.popcraft.villagepro.storage.SQLiteStorage;
+import cn.popcraft.villagepro.util.VillagerUtils;
 import cn.popcraft.villagepro.util.VillagerUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,8 +16,9 @@ import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.simplelite.SimpleDatabase;
 
+
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,18 +26,27 @@ import java.util.UUID;
 
 public class VillageManager {
     private final VillagePro plugin;
-    private final SimpleDatabase database;
+    private final SQLiteStorage villageStorage;
     private final Map<UUID, Village> villageCache = new HashMap<>();
 
     public VillageManager(VillagePro plugin) {
         this.plugin = plugin;
-        this.database = plugin.getDatabase();
-        
-        // 注册数据模型
-        database.registerTable(Village.class);
+        this.villageStorage = plugin.getDatabase();
+        this.villageStorage.registerTable(Village.class);
         
         // 加载所有村庄数据
         loadAll();
+        
+        // 定时保存数据（每10分钟一次）
+        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, this::saveAll, 20 * 60 * 10, 20 * 60 * 10);
+    }
+
+    public VillageUpgrade getVillageUpgrade(UUID playerUuid) {
+        Village village = villageCache.get(playerUuid);
+        if (village != null) {
+            return village.getUpgrade();
+        }
+        return null;
     }
 
     /**
@@ -41,9 +54,11 @@ public class VillageManager {
      */
     public void loadAll() {
         villageCache.clear();
-        database.findAll(Village.class).forEach(village -> 
-            villageCache.put(village.getOwnerUuid(), village)
-        );
+        villageStorage.findAll(Village.class).forEach(village -> {
+            if (village != null && village.getOwnerUuid() != null) {
+                villageCache.put(village.getOwnerUuid(), village);
+            }
+        });
         plugin.getLogger().info("已加载 " + villageCache.size() + " 个村庄数据");
     }
 
@@ -51,7 +66,7 @@ public class VillageManager {
      * 保存所有村庄数据
      */
     public void saveAll() {
-        villageCache.values().forEach(database::save);
+        villageCache.values().forEach(village -> villageStorage.save(village));
         plugin.getLogger().info("已保存 " + villageCache.size() + " 个村庄数据");
     }
 
@@ -83,7 +98,7 @@ public class VillageManager {
             village.setUpgradeLevels(upgradeLevels);
             
             villageCache.put(playerUuid, village);
-            database.save(village);
+            villageStorage.save(village);
         }
         
         return village;
@@ -93,7 +108,9 @@ public class VillageManager {
      * 保存村庄数据
      */
     public void saveVillage(Village village) {
-        database.save(village);
+        if (village != null) {
+            villageStorage.save(village);
+        }
     }
     
     /**
@@ -164,8 +181,13 @@ public class VillageManager {
         VillagerUtils.setOwner(villager, player.getUniqueId());
         
         // 设置村民的名称
-        villager.setCustomName("§a" + player.getName() + "的村民");
+        Map<String, String> replacements = new HashMap<>();
+        replacements.put("player", player.getName());
+        villager.setCustomName(plugin.getMessageManager().getMessage("villager.name", replacements));
         villager.setCustomNameVisible(true);
+        
+        // 初始化村民技能
+        plugin.getVillagerSkillManager().initializeVillagerSkills(villager);
         
         // 创建村民实体包装
         VillagerEntity villagerEntity = new VillagerEntity(villager, player.getUniqueId());
@@ -195,7 +217,7 @@ public class VillageManager {
                     return false;
                 }
             } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("无效的物品类型: " + entry.getKey());
+                plugin.getLogger().warning(plugin.getMessageManager().getMessage("config.invalid-upgrade-type", Map.of("type", entry.getKey())));
             }
         }
         
@@ -220,7 +242,7 @@ public class VillageManager {
                 
                 player.getInventory().removeItem(new ItemStack(material, amount));
             } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("无效的物品类型: " + entry.getKey());
+                plugin.getLogger().warning(plugin.getMessageManager().getMessage("config.invalid-upgrade-type", Map.of("type", entry.getKey())));
             }
         }
     }
@@ -253,6 +275,7 @@ public class VillageManager {
         
         // 检查是否已达到最高等级
         if (currentLevel >= 5) {
+            player.sendMessage(plugin.getMessageManager().getMessage("upgrade.max-level-reached"));
             return false;
         }
         
@@ -261,11 +284,13 @@ public class VillageManager {
         cn.popcraft.villagepro.model.Upgrade upgrade = plugin.getConfigManager().getUpgrade(type, nextLevel);
         
         if (upgrade == null) {
+            player.sendMessage(plugin.getMessageManager().getMessage("upgrade.failed"));
             return false;
         }
         
         // 检查玩家是否有足够的资源
         if (!hasEnoughUpgradeResources(player, upgrade)) {
+            player.sendMessage(plugin.getMessageManager().getMessage("upgrade.failed"));
             return false;
         }
         
@@ -275,6 +300,23 @@ public class VillageManager {
         // 更新升级等级
         village.getUpgradeLevels().put(type, nextLevel);
         saveVillage(village);
+        
+        // 如果是特定的升级类型，更新相关村民的技能
+        if (type == UpgradeType.HEALTH || type == UpgradeType.SPEED || type == UpgradeType.PROTECTION) {
+            // 应用技能效果到所有已招募的村民
+            for (UUID villagerId : village.getVillagerIds()) {
+                VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerId);
+                if (villagerEntity != null) {
+                    plugin.getVillagerSkillManager().applyVillagerSkills(villagerEntity.getVillager());
+                }
+            }
+        }
+        
+        // 发送成功消息
+        Map<String, String> replacements = new HashMap<>();
+        replacements.put("type", plugin.getMessageManager().getMessage("upgrade-types." + type.name()));
+        replacements.put("level", String.valueOf(nextLevel));
+        player.sendMessage(plugin.getMessageManager().getMessage("upgrade.success", replacements));
         
         return true;
     }
@@ -307,7 +349,7 @@ public class VillageManager {
                     return false;
                 }
             } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("无效的物品类型: " + entry.getKey());
+                plugin.getLogger().warning(plugin.getMessageManager().getMessage("config.invalid-upgrade-type", Map.of("type", entry.getKey())));
             }
         }
         
@@ -339,7 +381,7 @@ public class VillageManager {
                 
                 player.getInventory().removeItem(new ItemStack(material, amount));
             } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("无效的物品类型: " + entry.getKey());
+                plugin.getLogger().warning(plugin.getMessageManager().getMessage("config.invalid-upgrade-type", Map.of("type", entry.getKey())));
             }
         }
     }

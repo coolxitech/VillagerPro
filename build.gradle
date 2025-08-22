@@ -2,26 +2,39 @@ plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
+group = 'cn.popcraft'
+version = '1.1.1-SNAPSHOT'
+description = 'Spigot Plugin'
 
 repositories {
     mavenCentral()
     maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://maven.enginehub.org/repo/' }
+    maven { url 'https://nexus.hc.to/content/repositories/pub_releases' }
+    maven { url 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
 }
 
 dependencies {
     implementation 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT'
-    implementation 'org.simplelite:simple-lite:2.0'
+    implementation 'org.xerial:sqlite-jdbc:3.42.0.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
     compileOnly 'org.jetbrains:annotations:24.0.0'
+    compileOnly group: 'net.milkbowl.vault', name: 'VaultAPI', version: '1.7'
+    annotationProcessor group: 'net.milkbowl.vault', name: 'VaultAPI', version: '1.7'
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
-shadowJar {
-    archiveBaseName.set('VillagePro')
-    archiveClassifier.set('')
-    archiveVersion.set('')
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
 }
+
+tasks.withType(Javadoc) {
+    options.encoding = 'UTF-8'
+}
+

@@ -2,6 +2,7 @@ package cn.popcraft.villagepro.command;
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.gui.UpgradeGUI;
+import cn.popcraft.villagepro.model.Village;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -18,13 +19,13 @@ public class UpgradeCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§c只有玩家可以使用此命令!");
+            sender.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
 
         // 打开升级GUI
-        UpgradeGUI gui = new UpgradeGUI(plugin);
-        gui.openMenu(player);
+        UpgradeGUI gui = new UpgradeGUI(plugin, player, plugin.getVillageManager().getOrCreateVillage(player));
+        gui.openMainMenu(player);
 
         return true;
     }

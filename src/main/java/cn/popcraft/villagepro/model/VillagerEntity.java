@@ -7,11 +7,13 @@ public class VillagerEntity {
     private final Villager villager;
     private final UUID ownerUuid;
     private FollowMode followMode;
+    private VillagerProfession profession; // 添加职业字段
 
     public VillagerEntity(Villager villager, UUID ownerUuid) {
         this.villager = villager;
         this.ownerUuid = ownerUuid;
         this.followMode = FollowMode.NONE;
+        this.profession = VillagerProfession.fromBukkit(villager.getProfession()); // 初始化职业
     }
 
     public Villager getVillager() {
@@ -28,5 +30,13 @@ public class VillagerEntity {
 
     public void setFollowMode(FollowMode followMode) {
         this.followMode = followMode;
+    }
+    
+    public VillagerProfession getProfession() {
+        return profession;
+    }
+    
+    public void setProfession(VillagerProfession profession) {
+        this.profession = profession;
     }
 }

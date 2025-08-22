@@ -47,7 +47,7 @@ public class ConfigManager {
                 try {
                     type = UpgradeType.valueOf(typeKey.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    plugin.getLogger().warning("未知的升级类型: " + typeKey);
+                    plugin.getLogger().warning(plugin.getMessageManager().getMessage("config.invalid-upgrade-type", Map.of("type", typeKey)));
                     continue;
                 }
                 
@@ -81,7 +81,7 @@ public class ConfigManager {
                                 levelMap.put(level, upgrade);
                             }
                         } catch (NumberFormatException e) {
-                            plugin.getLogger().warning("无效的升级等级: " + levelKey);
+                            plugin.getLogger().warning(plugin.getMessageManager().getMessage("config.invalid-upgrade-level", Map.of("level", levelKey)));
                         }
                     }
                     

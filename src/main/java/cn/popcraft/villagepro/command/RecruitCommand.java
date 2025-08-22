@@ -19,25 +19,25 @@ public class RecruitCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§c只有玩家可以使用此命令!");
+            sender.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
 
         // 查找最近的未招募村民
         Villager villager = plugin.getVillageManager().findNearestUnrecruitedVillager(player, 5);
         if (villager == null) {
-            player.sendMessage("§c[VillagePro] 附近没有可招募的村民!");
+            player.sendMessage(plugin.getMessageManager().getMessage("recruit.failed"));
             return true;
         }
 
         // 尝试招募村民
         if (plugin.getVillageManager().recruitVillager(player, villager)) {
-            player.sendMessage("§a[VillagePro] 成功招募了一名村民!");
+            player.sendMessage(plugin.getMessageManager().getMessage("recruit.success"));
             
             // 询问是否跟随
             plugin.getFollowManager().requestFollow(player, villager);
         } else {
-            player.sendMessage("§c[VillagePro] 招募失败，请确保你有足够的资源!");
+            player.sendMessage(plugin.getMessageManager().getMessage("recruit.failed"));
         }
 
         return true;

@@ -1,2 +1,8 @@
 /build
 /work.md
+/.vscode
+/.log
+/.mdmp
+/API_MIGRATION_REPORT.md
+/.gradle
+/src/main/java/cn/popcraft/villagepro/manager/CropManager.java.txt

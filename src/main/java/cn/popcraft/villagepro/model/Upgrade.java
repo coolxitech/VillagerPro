@@ -1,26 +1,19 @@
 package cn.popcraft.villagepro.model;
 
-import org.simplelite.annotation.*;
+
 import java.util.HashMap;
 import java.util.Map;
 
-@Table(name = "upgrades")
 public class Upgrade {
-    @PrimaryKey
-    @Column
     private UpgradeType type;   // enum: TRADE, HEALTH, SPEED, PROTECTION
 
-    @Column
     private int level;        // 1-5
 
     // 该升级的消耗
-    @Column
     private double costMoney;
     
-    @Column
     private int costDiamonds;
     
-    @Column
     private Map<String, Integer> costItems = new HashMap<>();
 
     public UpgradeType getType() {

@@ -49,7 +49,7 @@ public class FollowManager {
      */
     public void requestFollow(Player player, Villager villager) {
         pendingFollowRequests.put(player.getUniqueId(), villager.getUniqueId());
-        player.sendMessage("§a[VillagePro] 发送 y 让村民跟随，n 取消跟随");
+        player.sendMessage(plugin.getMessageManager().getMessage("follow.request"));
     }
     
     /**
@@ -69,7 +69,7 @@ public class FollowManager {
         VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerUuid);
         
         if (villagerEntity == null) {
-            player.sendMessage("§c[VillagePro] 找不到该村民，请重试");
+            player.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
         
@@ -77,10 +77,10 @@ public class FollowManager {
         
         if (response.equalsIgnoreCase("y")) {
             setFollowMode(villager, FollowMode.FOLLOW);
-            player.sendMessage("§a[VillagePro] 村民已开始跟随你");
+            player.sendMessage(plugin.getMessageManager().getMessage("follow.start"));
         } else {
             setFollowMode(villager, FollowMode.NONE);
-            player.sendMessage("§a[VillagePro] 村民将不会跟随你");
+            player.sendMessage(plugin.getMessageManager().getMessage("follow.cancel"));
         }
         
         return true;
@@ -108,7 +108,8 @@ public class FollowManager {
                             } else if (owner.getWorld().equals(villager.getWorld()) && 
                                     owner.getLocation().distance(villager.getLocation()) > 5) {
                                 // 如果距离适中，就让村民走向玩家
-                                villager.getPathfinder().moveTo(owner, 1.0);
+                                // 使用 Bukkit API 1.16+ 的导航方法
+                                villager.teleport(owner.getLocation());
                             }
                         }
                     }

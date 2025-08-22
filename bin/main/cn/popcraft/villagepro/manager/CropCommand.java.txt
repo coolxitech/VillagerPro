@@ -1,0 +1,258 @@
+package cn.popcraft.villagepro.command;
+
+import cn.popcraft.villagepro.VillagePro;
+import cn.popcraft.villagepro.model.CropStorage;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * 作物命令处理器
+ */
+public class CropCommand implements CommandExecutor, TabCompleter {
+    private final VillagePro plugin;
+    
+    public CropCommand(VillagePro plugin) {
+        this.plugin = plugin;
+    }
+    
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + "只有玩家可以使用此命令！");
+            return true;
+        }
+        
+        if (args.length == 0) {
+            // 显示作物列表
+            showCropList(player);
+            return true;
+        }
+        
+        String subCommand = args[0].toLowerCase();
+        
+        switch (subCommand) {
+            case "list":
+                showCropList(player);
+                break;
+            case "info":
+                if (args.length < 2) {
+                    player.sendMessage(ChatColor.RED + "用法: /crop info <作物类型>");
+                    return true;
+                }
+                showCropInfo(player, args[1]);
+                break;
+            case "harvest":
+                if (args.length < 2) {
+                    player.sendMessage(ChatColor.RED + "用法: /crop harvest <作物类型> [数量]");
+                    return true;
+                }
+                int amount = 1;
+                if (args.length >= 3) {
+                    try {
+                        amount = Integer.parseInt(args[2]);
+                    } catch (NumberFormatException e) {
+                        player.sendMessage(ChatColor.RED + "无效的数量: " + args[2]);
+                        return true;
+                    }
+                }
+                harvestCrop(player, args[1], amount);
+                break;
+            case "store":
+                if (args.length < 3) {
+                    player.sendMessage(ChatColor.RED + "用法: /crop store <作物类型> <数量>");
+                    return true;
+                }
+                try {
+                    int storeAmount = Integer.parseInt(args[2]);
+                    storeCrop(player, args[1], storeAmount);
+                } catch (NumberFormatException e) {
+                    player.sendMessage(ChatColor.RED + "无效的数量: " + args[2]);
+                }
+                break;
+            case "help":
+            default:
+                showHelp(player);
+                break;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * 显示作物列表
+     */
+    private void showCropList(Player player) {
+        // 这里需要从你的作物管理器获取数据
+        // 暂时使用示例数据
+        Map<String, Integer> crops = new HashMap<>();
+        crops.put("小麦", 64);
+        crops.put("胡萝卜", 32);
+        crops.put("土豆", 48);
+        
+        if (crops.isEmpty()) {
+            player.sendMessage(ChatColor.YELLOW + "你还没有任何作物存储。");
+            return;
+        }
+        
+        player.sendMessage(ChatColor.GREEN + "=== 你的作物存储 ===");
+        for (Map.Entry<String, Integer> entry : crops.entrySet()) {
+            player.sendMessage(ChatColor.WHITE + entry.getKey() + ": " + ChatColor.YELLOW + entry.getValue());
+        }
+    }
+    
+    /**
+     * 显示作物信息
+     */
+    private void showCropInfo(Player player, String cropType) {
+        // 这里需要从你的作物管理器获取数据
+        int amount = 0; // 从数据库或管理器获取
+        player.sendMessage(ChatColor.GREEN + "作物类型: " + ChatColor.WHITE + cropType);
+        player.sendMessage(ChatColor.GREEN + "存储数量: " + ChatColor.YELLOW + amount);
+    }
+    
+    /**
+     * 收获作物
+     */
+    private void harvestCrop(Player player, String cropType, int amount) {
+        // 这里需要实现实际的收获逻辑
+        player.sendMessage(ChatColor.GREEN + "成功收获 " + amount + " 个 " + cropType + "!");
+    }
+    
+    /**
+     * 存储作物
+     */
+    private void storeCrop(Player player, String cropType, int amount) {
+        // 这里需要实现实际的存储
+    /**
+     * 显示帮助信息
+     */
+    private void showHelp(Player player) {
+        player.sendMessage(ChatColor.GREEN + "=== 作物命令帮助 ===");
+        player.sendMessage(ChatColor.WHITE + "/crop list - 显示作物列表");
+        player.sendMessage(ChatColor.WHITE + "/crop info <作物类型> - 显示作物信息");
+        player.sendMessage(ChatColor.WHITE + "/crop harvest <作物类型> [数量] - 收获作物");
+        player.sendMessage(ChatColor.WHITE + "/crop store <作物类型> <数量> - 存储作物");
+        player.sendMessage(ChatColor.WHITE + "/crop help - 显示此帮助信息");
+    }
+    
+    @Override
+    @Nullable
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        List<String> completions = new ArrayList<>();
+        
+        if (args.length == 1) {
+            // 第一个参数：子命令
+            List<String> subCommands = Arrays.asList("list", "info", "harvest", "store", "help");
+            return subCommands.stream()
+                    .filter(cmd -> cmd.toLowerCase().startsWith(args[0].toLowerCase()))
+                    .collect(Collectors.toList());
+        } else if (args.length == 2) {
+            // 第二个参数：作物类型
+            String subCommand = args[0].toLowerCase();
+            if (subCommand.equals("info") || subCommand.equals("harvest") || subCommand.equals("store")) {
+                List<String> cropTypes = getCropTypes();
+                return cropTypes.stream()
+                        .filter(crop -> crop.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .collect(Collectors.toList());
+            }
+        } else if (args.length == 3) {
+            // 第三个参数：数量（对于harvest和store命令）
+            String subCommand = args[0].toLowerCase();
+            if (subCommand.equals("harvest") || subCommand.equals("store")) {
+                return Arrays.asList("1", "8", "16", "32", "64");
+            }
+        }
+        
+        return completions;
+    }
+    
+    /**
+     * 获取可用的作物类型列表
+     */
+    private List<String> getCropTypes() {
+        // 这里应该从你的作物管理器或配置文件中获取作物类型
+        // 暂时返回一些示例作物类型
+        return Arrays.asList("小麦", "胡萝卜", "土豆", "甜菜根", "南瓜", "西瓜", "可可豆", "甘蔗");
+    }
+    
+    /**
+     * 获取玩家的作物存储信息
+     */
+    private CropStorage getPlayerCropStorage(Player player) {
+        // 这里需要从你的数据管理器中获取玩家的作物存储信息
+        // 暂时返回null，你需要根据实际实现替换
+        return null;
+    }
+    
+    /**
+     * 验证作物类型是否有效
+     */
+    private boolean isValidCropType(String cropType) {
+        return getCropTypes().contains(cropType);
+    }
+    
+    /**
+     * 获取作物的显示名称
+     */
+    private String getCropDisplayName(String cropType) {
+        // 这里可以添加作物类型的本地化名称映射
+        Map<String, String> displayNames = new HashMap<>();
+        displayNames.put("wheat", "小麦");
+        displayNames.put("carrot", "胡萝卜");
+        displayNames.put("potato", "土豆");
+        displayNames.put("beetroot", "甜菜根");
+        displayNames.put("pumpkin", "南瓜");
+        displayNames.put("melon", "西瓜");
+        displayNames.put("cocoa", "可可豆");
+        displayNames.put("sugar_cane", "甘蔗");
+        
+        return displayNames.getOrDefault(cropType.toLowerCase(), cropType);
+    }
+    
+    /**
+     * 检查玩家是否有足够的作物进行操作
+     */
+    private boolean hasEnoughCrops(Player player, String cropType, int amount) {
+        CropStorage storage = getPlayerCropStorage(player);
+        if (storage == null) {
+            return false;
+        }
+        // 这里需要实现实际的检查逻辑
+        return storage.getCropAmount(cropType) >= amount;
+    }
+    
+    /**
+     * 添加作物到玩家存储
+     */
+    private void addCropToStorage(Player player, String cropType, int amount) {
+        CropStorage storage = getPlayerCropStorage(player);
+        if (storage != null) {
+            storage.addCrop(cropType, amount);
+            // 这里需要保存到数据库或文件
+        }
+    }
+    
+    /**
+     * 从玩家存储中移除作物
+     */
+    private void removeCropFromStorage(Player player, String cropType, int amount) {
+        CropStorage storage = getPlayerCropStorage(player);
+        if (storage != null) {
+            storage.removeCrop(cropType, amount);
+            // 这里需要保存到数据库或文件
+        }
+    }
+}
