@@ -1,155 +1,170 @@
 package cn.popcraft.villagepro.manager;
 
 import cn.popcraft.villagepro.VillagePro;
-import cn.popcraft.villagepro.model.UpgradeType;
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.ChatColor;
 
 import java.io.File;
-import java.util.HashMap;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Map;
+import java.util.HashMap;
 
-/**
- * 消息管理器
- */
 public class MessageManager {
     private final VillagePro plugin;
-    private FileConfiguration messagesConfig;
     private final Map<String, String> messages = new HashMap<>();
-    private final Map<UpgradeType, String> upgradeTypeNames = new HashMap<>();
+    private FileConfiguration messagesConfig;
     
     public MessageManager(VillagePro plugin) {
         this.plugin = plugin;
         loadMessages();
     }
     
-    /**
-     * 获取消息前缀
-     * @return 消息前缀
-     */
-    public String getPrefix() {
-        return messages.get("prefix");
-    }
-
-    /**
-     * 加载消息配置
-     */
-    public void loadMessages() {
-        File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
+    private void loadMessages() {
+        // 保存默认消息配置文件
+        saveDefaultMessages();
         
+        // 加载消息配置
+        File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         if (!messagesFile.exists()) {
             plugin.saveResource("messages.yml", false);
         }
         
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
         
-        // 加载基本消息
-        messages.put("prefix", messagesConfig.getString("prefix", "&a[VillagePro] &r"));
-        messages.put("no-permission", messagesConfig.getString("no-permission", "&c你没有权限执行此命令!"));
+        // 加载默认消息（如果配置文件中没有定义）
+        loadDefaultMessages();
         
-        // 加载村民相关消息
-        messages.put("villager.name", messagesConfig.getString("villager.name", "&a{player}的村民"));
+        // 加载配置文件中的消息
+        loadConfigMessages();
         
-        // 加载配置相关消息
-        messages.put("config.invalid-upgrade-type", messagesConfig.getString("config.invalid-upgrade-type", "未知的升级类型: {type}"));
-        messages.put("config.invalid-upgrade-level", messagesConfig.getString("config.invalid-upgrade-level", "无效的升级等级: {level}"));
-        
-        // 加载作物相关消息
-        messages.put("crop.invalid-crop-type", messagesConfig.getString("crop.invalid-crop-type", "无效的作物类型: {type}"));
-        
-        // 加载招募相关消息
-        messages.put("recruit.success", messagesConfig.getString("recruit.success", "&a成功招募了一名村民!"));
-        messages.put("recruit.failed", messagesConfig.getString("recruit.failed", "&c招募失败，请确保你有足够的资源!"));
-        messages.put("recruit.max-villagers-reached", messagesConfig.getString("recruit.max-villagers-reached", "&c你已达到最大村民数量限制!"));
-        
-        // 加载升级相关消息
-        messages.put("upgrade.success", messagesConfig.getString("upgrade.success", "&a成功升级了村民的 {type} 能力到 {level} 级!"));
-        messages.put("upgrade.failed", messagesConfig.getString("upgrade.failed", "&c升级失败，请确保你有足够的资源!"));
-        messages.put("upgrade.max-level-reached", messagesConfig.getString("upgrade.max-level-reached", "&c该能力已达到最高等级!"));
-        
-        // 加载升级描述
-        messages.put("upgrade.trade.description", messagesConfig.getString("upgrade.trade.description", "提升村民交易效率"));
-        messages.put("upgrade.health.description", messagesConfig.getString("upgrade.health.description", "提升村民生命值"));
-        messages.put("upgrade.speed.description", messagesConfig.getString("upgrade.speed.description", "提升村民移动速度"));
-        messages.put("upgrade.protection.description", messagesConfig.getString("upgrade.protection.description", "提升村民抗性"));
-        messages.put("upgrade.restock-speed.description", messagesConfig.getString("upgrade.restock-speed.description", "提升村民补货速度"));
-        messages.put("upgrade.crop-growth.description", messagesConfig.getString("upgrade.crop-growth.description", "提升作物生长速度和收获量"));
-        messages.put("upgrade.trade-amount.description", messagesConfig.getString("upgrade.trade-amount.description", "提升村民交易货物数量"));
-        
-        // 加载跟随相关消息
-        messages.put("follow.start", messagesConfig.getString("follow.start", "&a村民开始跟随你"));
-        messages.put("follow.stop", messagesConfig.getString("follow.stop", "&a村民停止跟随"));
-        messages.put("follow.stay", messagesConfig.getString("follow.stay", "&a村民将停留在此处"));
-        messages.put("follow.free", messagesConfig.getString("follow.free", "&a村民将自由活动"));
-        messages.put("follow.request", messagesConfig.getString("follow.request", "&a发送 y 让村民跟随，n 取消跟随"));
-        messages.put("follow.cancel", messagesConfig.getString("follow.cancel", "&a村民将不会跟随你"));
-        
-        // 加载作物相关消息
-        messages.put("crop.collected", messagesConfig.getString("crop.collected", "&a你的村民收集了 {amount} 个 {crop}!"));
-        messages.put("crop.withdraw-success", messagesConfig.getString("crop.withdraw-success", "&a成功取出 {amount} 个 {crop}!"));
-        messages.put("crop.withdraw-failed", messagesConfig.getString("crop.withdraw-failed", "&c取出失败，请确保你有足够的 {crop}!"));
-        messages.put("crop.storage-empty", messagesConfig.getString("crop.storage-empty", "&c你的作物存储是空的!"));
-        
-        // 加载GUI相关消息
-        messages.put("gui.upgrade-title", messagesConfig.getString("gui.upgrade-title", "&6村民升级"));
-        messages.put("gui.confirm-title", messagesConfig.getString("gui.confirm-title", "&6确认升级: {type}"));
-        messages.put("gui.confirm-prefix", messagesConfig.getString("gui.confirm-prefix", "&6确认升级"));
-        messages.put("gui.close", messagesConfig.getString("gui.close", "&c关闭"));
-        messages.put("gui.confirm", messagesConfig.getString("gui.confirm", "&a确认升级"));
-        messages.put("gui.cancel", messagesConfig.getString("gui.cancel", "&c取消"));
-        messages.put("gui.upgrade-info", messagesConfig.getString("gui.upgrade-info", "&6升级信息"));
-        messages.put("gui.current-level", messagesConfig.getString("gui.current-level", "&7当前等级: &e{level}"));
-        messages.put("gui.target-level", messagesConfig.getString("gui.target-level", "&7目标等级: &e{level}"));
-        messages.put("gui.cost", messagesConfig.getString("gui.cost", "&7费用:"));
-        messages.put("gui.cost-money", messagesConfig.getString("gui.cost-money", "&7 - 金币: &e{amount}"));
-        messages.put("gui.cost-diamond", messagesConfig.getString("gui.cost-diamond", "&7 - 钻石: &e{amount}"));
-        messages.put("gui.cost-item", messagesConfig.getString("gui.cost-item", "&7 - {item}: &e{amount}"));
-        messages.put("gui.level-display", messagesConfig.getString("gui.level-display", "&7当前等级: &e{level}/{max}"));
-        messages.put("gui.click-to-upgrade", messagesConfig.getString("gui.click-to-upgrade", "&e点击升级"));
-        
-        // 加载升级类型名称
-        for (UpgradeType type : UpgradeType.values()) {
-            String path = "upgrade-types." + type.name();
-            String defaultName = type.name().toLowerCase().replace('_', ' ');
-            upgradeTypeNames.put(type, messagesConfig.getString(path, defaultName));
-        }
-        
-        plugin.getLogger().info("已加载 " + messages.size() + " 条消息和 " + upgradeTypeNames.size() + " 个升级类型名称");
+        plugin.getLogger().info("已加载 " + messages.size() + " 条消息配置");
     }
     
-    /**
-     * 获取消息
-     * @param key 消息键
-     * @return 格式化后的消息
-     */
+    private void saveDefaultMessages() {
+        // 保存默认消息配置
+        plugin.saveResource("messages.yml", false);
+    }
+    
+    private void loadDefaultMessages() {
+        // 加载默认消息
+        messages.put("prefix", "&a[VillagePro] &r");
+        messages.put("no-permission", "&c你没有权限执行此命令!");
+        
+        // 村民相关消息
+        messages.put("villager.name", "&a{player}的村民");
+        messages.put("villager.recruited", "&a成功招募了村民!");
+        messages.put("villager.not-found", "&c附近没有可招募的村民!");
+        messages.put("villager.max-reached", "&c你已达到最大村民数量限制!");
+        
+        // 村庄相关消息
+        messages.put("village.created", "&a村庄创建成功!");
+        messages.put("village.upgraded", "&a村庄升级成功! 当前等级: &e{level}");
+        messages.put("village.max-level", "&c村庄已达到最高等级!");
+        messages.put("village.not-found", "&c你还没有村庄，请先创建一个!");
+        
+        // 升级相关消息
+        messages.put("upgrade.trade.description", "提高村民交易数量和质量");
+        messages.put("upgrade.health.description", "提高村民生命值和治疗能力");
+        messages.put("upgrade.speed.description", "提高村民移动速度");
+        messages.put("upgrade.protection.description", "提高村民防护能力");
+        messages.put("upgrade.restock-speed.description", "提高村民补货速度");
+        messages.put("upgrade.crop-yield.description", "提高农民作物产量");
+        messages.put("upgrade.trade-amount.description", "提高村民交易数量");
+        messages.put("upgrade.trade-quality.description", "提高村民交易物品质量");
+        messages.put("upgrade.trade-price.description", "提高村民交易价格");
+        
+        messages.put("upgrade.success", "&a成功升级了村民的 {type} 能力到 {level} 级!");
+        messages.put("upgrade.failed", "&c升级失败，请确保你有足够的资源!");
+        messages.put("upgrade.max-level-reached", "&c该能力已达到最高等级!");
+        
+        // 任务相关消息
+        messages.put("task.generated", "&a已生成新的任务: &e{description}");
+        messages.put("task.progress", "&a任务进度: &e{progress}/{target} {task}");
+        messages.put("task.completed", "&a任务完成! 获得奖励: &e{reward}");
+        messages.put("task.reward", "&a任务奖励: &e{exp} 经验 &7| &e{money} 金币");
+        messages.put("task.pending", "&e任务系统正在开发中...");
+        
+        // 作物相关消息
+        messages.put("crop.collected", "&a村民收集了 {amount} 个 {crop}!");
+        messages.put("crop.withdraw-success", "&a成功取出 {amount} 个 {crop}!");
+        messages.put("crop.withdraw-failed", "&c取出失败，请确保你有足够的 {crop}!");
+        messages.put("crop.storage-empty", "&c你的作物存储是空的!");
+        
+        // GUI相关消息
+        messages.put("gui.upgrade-title", "&6村民升级");
+        messages.put("gui.production-title", "&6村民产出");
+        messages.put("gui.profession-production-title", "&6{profession}产出");
+        messages.put("gui.confirm-title", "&6确认升级 - {type}");
+        messages.put("gui.upgrade-info", "&e升级信息");
+        messages.put("gui.current-level", "&7当前等级: &e{level}");
+        messages.put("gui.target-level", "&7目标等级: &e{level}");
+        messages.put("gui.cost", "&7升级费用:");
+        messages.put("gui.cost-money", "&f- 金币: &e{amount}");
+        messages.put("gui.cost-diamond", "&f- 钻石: &e{amount}");
+        messages.put("gui.cost-item", "&f- {item}: &e{amount}");
+        messages.put("gui.confirm", "&a&l确认升级");
+        messages.put("gui.cancel", "&c&l取消");
+        messages.put("gui.close", "&c&l关闭");
+        messages.put("gui.back", "&c返回");
+        messages.put("gui.click-to-upgrade", "&e点击升级");
+        messages.put("gui.click-to-interact", "&e点击交互");
+        
+        // 跟随相关消息
+        messages.put("follow.start", "&a村民开始跟随你");
+        messages.put("follow.stop", "&a村民停止跟随");
+        messages.put("follow.stay", "&a村民将停留在此处");
+        messages.put("follow.free", "&a村民将自由活动");
+        messages.put("follow.request", "&a发送 y 让村民跟随，n 取消跟随");
+        messages.put("follow.cancel", "&a村民将不会跟随你");
+        
+        // 招募相关消息
+        messages.put("recruit.success", "&a成功招募了一名村民!");
+        messages.put("recruit.failed", "&c招募失败，请确保你有足够的资源!");
+        messages.put("recruit.max-villagers-reached", "&c你已达到最大村民数量限制!");
+        
+        // 配置相关消息
+        messages.put("config.invalid-upgrade-type", "未知的升级类型: {type}");
+        messages.put("config.invalid-upgrade-level", "无效的升级等级: {level}");
+        
+        // 升级类型名称
+        messages.put("upgrade-types.TRADE", "交易能力");
+        messages.put("upgrade-types.HEALTH", "健康能力");
+        messages.put("upgrade-types.SPEED", "速度能力");
+        messages.put("upgrade-types.PROTECTION", "防护能力");
+        messages.put("upgrade-types.RESTOCK_SPEED", "补货速度");
+        messages.put("upgrade-types.CROP_GROWTH", "作物产量");
+        messages.put("upgrade-types.TRADE_AMOUNT", "交易数量");
+        messages.put("upgrade-types.TRADE_QUALITY", "交易质量");
+        messages.put("upgrade-types.TRADE_PRICE", "交易价格");
+    }
+    
+    private void loadConfigMessages() {
+        // 从配置文件加载消息，如果存在则覆盖默认消息
+        for (String key : messagesConfig.getKeys(true)) {
+            if (messagesConfig.isString(key)) {
+                messages.put(key, messagesConfig.getString(key));
+            }
+        }
+    }
+    
     public String getMessage(String key) {
-        String message = messages.getOrDefault(key, key);
-        return ChatColor.translateAlternateColorCodes('&', messages.getOrDefault("prefix", "") + message);
+        return ChatColor.translateAlternateColorCodes('&', 
+            messages.getOrDefault(key, "&c未找到消息: " + key));
     }
     
-    /**
-     * 获取消息（带替换）
-     * @param key 消息键
-     * @param replacements 替换内容
-     * @return 格式化后的消息
-     */
     public String getMessage(String key, Map<String, String> replacements) {
-        String message = messages.getOrDefault(key, key);
-        
-        for (Map.Entry<String, String> entry : replacements.entrySet()) {
-            message = message.replace("{" + entry.getKey() + "}", entry.getValue());
+        String message = getMessage(key);
+        if (replacements != null) {
+            for (Map.Entry<String, String> entry : replacements.entrySet()) {
+                message = message.replace("{" + entry.getKey() + "}", entry.getValue());
+            }
         }
-        
-        return ChatColor.translateAlternateColorCodes('&', messages.getOrDefault("prefix", "") + message);
+        return message;
     }
     
-    /**
-     * 获取升级类型名称
-     * @param type 升级类型
-     * @return 升级类型名称
-     */
-    public String getUpgradeTypeName(UpgradeType type) {
-        return upgradeTypeNames.getOrDefault(type, type.name().toLowerCase().replace('_', ' '));
+    public String getPrefix() {
+        return getMessage("prefix");
     }
 }

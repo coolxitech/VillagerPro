@@ -62,6 +62,9 @@ public class VillagePro extends JavaPlugin {
         // 保存默认配置
         saveDefaultConfig();
         
+        // 初始化消息管理器（需要在ConfigManager之前初始化）
+        this.messageManager = new MessageManager(this);
+        
         // 初始化配置管理器
         this.configManager = new ConfigManager(this);
         

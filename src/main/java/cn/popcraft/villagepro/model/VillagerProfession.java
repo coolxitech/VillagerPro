@@ -1,75 +1,99 @@
 package cn.popcraft.villagepro.model;
 
-import org.bukkit.entity.Villager;
-import java.util.EnumMap;
-import java.util.Map;
+import org.bukkit.entity.Villager.Profession;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
- * 村民职业枚举，定义了不同职业的村民及其对应的技能
+ * 村民职业枚举，包含职业技能
  */
 public enum VillagerProfession {
-    // 农民 - 与农业相关的技能
-    FARMER(Villager.Profession.FARMER, new ProfessionSkill[]{ProfessionSkill.FARMING, ProfessionSkill.HARVEST}),
+    // 农民 - 拥有农业和收获技能
+    FARMER("农民", Set.of(ProfessionSkill.FARMING, ProfessionSkill.SPEED, ProfessionSkill.REGENERATION)),
     
-    // 渔夫 - 与钓鱼和水上活动相关的技能
-    FISHERMAN(Villager.Profession.FISHERMAN, new ProfessionSkill[]{ProfessionSkill.FISHING, ProfessionSkill.WATER_BREATHING}),
+    // 渔夫 - 拥有钓鱼和水下呼吸技能
+    FISHERMAN("渔夫", Set.of(ProfessionSkill.FISHING, ProfessionSkill.WATER_BREATHING, ProfessionSkill.LUCK)),
     
-    // 牧羊人 - 与动物和羊毛相关的技能
-    SHEPHERD(Villager.Profession.SHEPHERD, new ProfessionSkill[]{ProfessionSkill.ANIMAL_BREEDING, ProfessionSkill.WOOL_PROCESSING}),
+    // 图书管理员 - 拥有附魔和知识技能
+    LIBRARIAN("图书管理员", Set.of(ProfessionSkill.ENCHANTING, ProfessionSkill.NIGHT_VISION, ProfessionSkill.LUCK)),
     
-    // 制箭师 - 与远程攻击和箭矢相关的技能
-    FLETCHER(Villager.Profession.FLETCHER, new ProfessionSkill[]{ProfessionSkill.ARCHERY, ProfessionSkill.ARROW_CRAFTING}),
+    // 武器匠 - 拥有武器锻造和战斗技能
+    WEAPONSMITH("武器匠", Set.of(ProfessionSkill.STRENGTH, ProfessionSkill.RESISTANCE, ProfessionSkill.FIRE_RESISTANCE)),
     
-    // 图书管理员 - 与魔法和知识相关的技能
-    LIBRARIAN(Villager.Profession.LIBRARIAN, new ProfessionSkill[]{ProfessionSkill.ENCHANTING, ProfessionSkill.KNOWLEDGE}),
+    // 牧羊人 - 拥有动物繁殖和羊毛处理技能
+    SHEPHERD("牧羊人", Set.of(ProfessionSkill.BREEDING, ProfessionSkill.SPEED, ProfessionSkill.JUMP_BOOST)),
     
-    // 祭司 - 与治疗和药水相关的技能
-    CLERIC(Villager.Profession.CLERIC, new ProfessionSkill[]{ProfessionSkill.HEALING, ProfessionSkill.POTION_BREWING}),
+    // 制箭师 - 拥有弓箭和箭矢制作技能
+    FLETCHER("制箭师", Set.of(ProfessionSkill.STRENGTH, ProfessionSkill.LUCK, ProfessionSkill.INVISIBILITY)),
     
-    // 武器匠 - 与武器制造和战斗相关的技能
-    WEAPONSMITH(Villager.Profession.WEAPONSMITH, new ProfessionSkill[]{ProfessionSkill.WEAPON_FORGE, ProfessionSkill.COMBAT}),
+    // 祭司 - 拥有治疗和药水酿造技能
+    CLERIC("祭司", Set.of(ProfessionSkill.HEALING, ProfessionSkill.REGENERATION, ProfessionSkill.NIGHT_VISION)),
     
-    // 盔甲匠 - 与盔甲制造和防护相关的技能
-    ARMORER(Villager.Profession.ARMORER, new ProfessionSkill[]{ProfessionSkill.ARMOR_FORGE, ProfessionSkill.PROTECTION}),
+    // 盔甲匠 - 拥有盔甲锻造和防护技能
+    ARMORER("盔甲匠", Set.of(ProfessionSkill.RESISTANCE, ProfessionSkill.STRENGTH, ProfessionSkill.FIRE_RESISTANCE)),
     
-    // 工具匠 - 与工具制造和挖掘相关的技能
-    TOOLSMITH(Villager.Profession.TOOLSMITH, new ProfessionSkill[]{ProfessionSkill.TOOL_FORGE, ProfessionSkill.MINING}),
+    // 工具匠 - 拥有工具锻造和挖掘技能
+    TOOLSMITH("工具匠", Set.of(ProfessionSkill.MINING, ProfessionSkill.SPEED, ProfessionSkill.STRENGTH)),
     
-    // 皮匠 - 与皮革和耐久相关的技能
-    BUTCHER(Villager.Profession.BUTCHER, new ProfessionSkill[]{ProfessionSkill.FOOD_PROCESSING, ProfessionSkill.BUTCHERING}),
+    // 皮匠 - 拥有食物加工和屠宰技能
+    BUTCHER("皮匠", Set.of(ProfessionSkill.HEALING, ProfessionSkill.REGENERATION, ProfessionSkill.LUCK)),
     
-    // 制图师 - 与探索和地图相关的技能
-    CARTOGRAPHER(Villager.Profession.CARTOGRAPHER, new ProfessionSkill[]{ProfessionSkill.EXPLORATION, ProfessionSkill.MAP_MAKING}),
+    // 制图师 - 拥有探索和制图技能
+    CARTOGRAPHER("制图师", Set.of(ProfessionSkill.SPEED, ProfessionSkill.NIGHT_VISION, ProfessionSkill.LUCK)),
     
     // 无职业村民
-    NONE(Villager.Profession.NONE, new ProfessionSkill[]{ProfessionSkill.BASIC}),
-    
-    // 村民职业未知
-    NITWIT(Villager.Profession.NITWIT, new ProfessionSkill[]{ProfessionSkill.BASIC});
+    NONE("无职业", new HashSet<>());
 
-    private final Villager.Profession bukkitProfession;
-    private final ProfessionSkill[] skills;
+    private final String displayName;
+    private final Set<ProfessionSkill> skills;
 
-    VillagerProfession(Villager.Profession bukkitProfession, ProfessionSkill[] skills) {
-        this.bukkitProfession = bukkitProfession;
+    VillagerProfession(String displayName, Set<ProfessionSkill> skills) {
+        this.displayName = displayName;
         this.skills = skills;
     }
 
-    public Villager.Profession getBukkitProfession() {
-        return bukkitProfession;
+    public String getDisplayName() {
+        return displayName;
     }
 
-    public ProfessionSkill[] getSkills() {
-        return skills;
+    public Set<ProfessionSkill> getSkills() {
+        return new HashSet<>(skills);
     }
 
-    // 根据Bukkit职业获取对应的枚举
-    public static VillagerProfession fromBukkit(Villager.Profession profession) {
-        for (VillagerProfession villagerProfession : values()) {
-            if (villagerProfession.bukkitProfession == profession) {
-                return villagerProfession;
-            }
+    /**
+     * 从Bukkit职业转换为插件职业枚举
+     *
+     * @param bukkitProfession Bukkit职业
+     * @return 插件职业枚举
+     */
+    public static VillagerProfession fromBukkit(Profession bukkitProfession) {
+        if (bukkitProfession == null) return NONE;
+        
+        switch (bukkitProfession) {
+            case FARMER:
+                return FARMER;
+            case FISHERMAN:
+                return FISHERMAN;
+            case LIBRARIAN:
+                return LIBRARIAN;
+            case WEAPONSMITH:
+                return WEAPONSMITH;
+            case SHEPHERD:
+                return SHEPHERD;
+            case FLETCHER:
+                return FLETCHER;
+            case CLERIC:
+                return CLERIC;
+            case ARMORER:
+                return ARMORER;
+            case TOOLSMITH:
+                return TOOLSMITH;
+            case BUTCHER:
+                return BUTCHER;
+            case CARTOGRAPHER:
+                return CARTOGRAPHER;
+            default:
+                return NONE;
         }
-        return NONE;
     }
 }

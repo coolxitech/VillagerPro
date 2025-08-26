@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.Random;
 
 /**
  * 村民产出GUI，用于获取村民生产的物品
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class ProductionGUI {
     private final VillagePro plugin;
     private final MessageManager messageManager;
+    private final Random random = new Random();
     
     public ProductionGUI(VillagePro plugin) {
         this.plugin = plugin;
@@ -33,7 +35,8 @@ public class ProductionGUI {
      * @param player 玩家
      */
     public void openMainMenu(Player player) {
-        String title = messageManager.getMessage("gui.production-title", new HashMap<>());
+        Map<String, String> replacements = new HashMap<>();
+        String title = messageManager.getMessage("gui.production-title", replacements);
         Inventory inventory = Bukkit.createInventory(null, 27, title);
         
         // 添加不同类型村民的产出按钮
@@ -83,9 +86,9 @@ public class ProductionGUI {
      */
     public void openProfessionProductionMenu(Player player, VillagerProfession profession) {
         Map<String, String> replacements = new HashMap<>();
-        replacements.put("profession", profession.name());
+        replacements.put("profession", profession.getDisplayName());
         String title = messageManager.getMessage("gui.profession-production-title", replacements);
-        Inventory inventory = Bukkit.createInventory(null, 27, title);
+        Inventory inventory = Bukkit.createInventory(null, 54, title); // 使用更大的GUI
         
         // 根据职业类型添加产出物品
         switch (profession) {
@@ -95,38 +98,89 @@ public class ProductionGUI {
                 addProductionItem(inventory, 11, Material.CARROT, "胡萝卜", player);
                 addProductionItem(inventory, 12, Material.POTATO, "马铃薯", player);
                 addProductionItem(inventory, 13, Material.BEETROOT, "甜菜根", player);
+                addProductionItem(inventory, 14, Material.PUMPKIN, "南瓜", player);
+                addProductionItem(inventory, 15, Material.MELON_SLICE, "西瓜片", player);
+                addProductionItem(inventory, 16, Material.APPLE, "苹果", player);
                 break;
             case FISHERMAN:
                 // 渔夫产出
                 addProductionItem(inventory, 10, Material.COD, "鳕鱼", player);
                 addProductionItem(inventory, 11, Material.SALMON, "鲑鱼", player);
                 addProductionItem(inventory, 12, Material.TROPICAL_FISH, "热带鱼", player);
+                addProductionItem(inventory, 13, Material.PUFFERFISH, "河豚", player);
+                addProductionItem(inventory, 14, Material.STRING, "线", player);
+                addProductionItem(inventory, 15, Material.STICK, "木棍", player);
                 break;
             case SHEPHERD:
                 // 牧羊人产出
                 addProductionItem(inventory, 10, Material.WHITE_WOOL, "羊毛", player);
                 addProductionItem(inventory, 11, Material.MUTTON, "羊肉", player);
+                addProductionItem(inventory, 12, Material.LEATHER, "皮革", player);
+                addProductionItem(inventory, 13, Material.BONE, "骨头", player);
+                addProductionItem(inventory, 14, Material.ROTTEN_FLESH, "腐肉", player);
                 break;
             case FLETCHER:
                 // 制箭师产出
                 addProductionItem(inventory, 10, Material.ARROW, "箭", player);
                 addProductionItem(inventory, 11, Material.FEATHER, "羽毛", player);
                 addProductionItem(inventory, 12, Material.FLINT, "燧石", player);
+                addProductionItem(inventory, 13, Material.STICK, "木棍", player);
+                addProductionItem(inventory, 14, Material.STRING, "线", player);
                 break;
             case LIBRARIAN:
                 // 图书管理员产出
                 addProductionItem(inventory, 10, Material.BOOK, "书", player);
                 addProductionItem(inventory, 11, Material.ENCHANTED_BOOK, "附魔书", player);
+                addProductionItem(inventory, 12, Material.PAPER, "纸", player);
+                addProductionItem(inventory, 13, Material.BOOKSHELF, "书架", player);
+                addProductionItem(inventory, 14, Material.GLASS, "玻璃", player);
                 break;
             case CLERIC:
                 // 祭司产出
                 addProductionItem(inventory, 10, Material.POTION, "药水", player);
                 addProductionItem(inventory, 11, Material.EXPERIENCE_BOTTLE, "经验瓶", player);
+                addProductionItem(inventory, 12, Material.REDSTONE, "红石", player);
+                addProductionItem(inventory, 13, Material.LAPIS_LAZULI, "青金石", player);
+                addProductionItem(inventory, 14, Material.GLOWSTONE_DUST, "荧石粉", player);
                 break;
             case CARTOGRAPHER:
                 // 制图师产出
                 addProductionItem(inventory, 10, Material.MAP, "地图", player);
                 addProductionItem(inventory, 11, Material.COMPASS, "指南针", player);
+                addProductionItem(inventory, 12, Material.PAPER, "纸", player);
+                addProductionItem(inventory, 13, Material.GLASS_PANE, "玻璃板", player);
+                break;
+            case WEAPONSMITH:
+                // 武器匠产出
+                addProductionItem(inventory, 10, Material.IRON_SWORD, "铁剑", player);
+                addProductionItem(inventory, 11, Material.DIAMOND_SWORD, "钻石剑", player);
+                addProductionItem(inventory, 12, Material.BOW, "弓", player);
+                addProductionItem(inventory, 13, Material.ARROW, "箭", player);
+                addProductionItem(inventory, 14, Material.IRON_INGOT, "铁锭", player);
+                break;
+            case ARMORER:
+                // 盔甲匠产出
+                addProductionItem(inventory, 10, Material.IRON_HELMET, "铁头盔", player);
+                addProductionItem(inventory, 11, Material.IRON_CHESTPLATE, "铁胸甲", player);
+                addProductionItem(inventory, 12, Material.IRON_LEGGINGS, "铁护腿", player);
+                addProductionItem(inventory, 13, Material.IRON_BOOTS, "铁靴子", player);
+                addProductionItem(inventory, 14, Material.IRON_INGOT, "铁锭", player);
+                break;
+            case TOOLSMITH:
+                // 工具匠产出
+                addProductionItem(inventory, 10, Material.IRON_PICKAXE, "铁镐", player);
+                addProductionItem(inventory, 11, Material.IRON_AXE, "铁斧", player);
+                addProductionItem(inventory, 12, Material.IRON_SHOVEL, "铁锹", player);
+                addProductionItem(inventory, 13, Material.IRON_HOE, "铁锄", player);
+                addProductionItem(inventory, 14, Material.IRON_INGOT, "铁锭", player);
+                break;
+            case BUTCHER:
+                // 皮匠产出
+                addProductionItem(inventory, 10, Material.COOKED_BEEF, "牛排", player);
+                addProductionItem(inventory, 11, Material.COOKED_PORKCHOP, "烤猪排", player);
+                addProductionItem(inventory, 12, Material.COOKED_CHICKEN, "熟鸡肉", player);
+                addProductionItem(inventory, 13, Material.COOKED_MUTTON, "熟羊肉", player);
+                addProductionItem(inventory, 14, Material.LEATHER, "皮革", player);
                 break;
             default:
                 // 默认产出
@@ -139,7 +193,7 @@ public class ProductionGUI {
         ItemMeta backMeta = backButton.getItemMeta();
         backMeta.setDisplayName(messageManager.getMessage("gui.back", new HashMap<>()));
         backButton.setItemMeta(backMeta);
-        inventory.setItem(22, backButton);
+        inventory.setItem(49, backButton); // 放在底部中央
         
         player.openInventory(inventory);
     }
@@ -154,9 +208,61 @@ public class ProductionGUI {
         
         List<String> lore = new ArrayList<>();
         lore.add("§7点击获取产出");
+        // 显示玩家当前存储的该物品数量
+        int storedAmount = plugin.getCropManager().getCropStorage(player.getUniqueId()).getCropAmount(material.name());
+        lore.add("§7当前存储: §e" + storedAmount + " §7个");
+        lore.add("§7左键: 获取随机数量");
+        lore.add("§7右键: 获取1个");
         meta.setLore(lore);
         
         item.setItemMeta(meta);
         inventory.setItem(slot, item);
+    }
+    
+    /**
+     * 处理产出获取
+     * @param player 玩家
+     * @param material 产出物品类型
+     * @param amount 获取数量
+     * @param isRightClick 是否右键点击
+     */
+    public void handleProductionWithdraw(Player player, Material material, int amount, boolean isRightClick) {
+        String cropType = material.name();
+        int storedAmount = plugin.getCropManager().getCropStorage(player.getUniqueId()).getCropAmount(cropType);
+        
+        // 如果是右键点击，只获取1个
+        if (isRightClick) {
+            amount = 1;
+        }
+        
+        // 如果是左键点击，随机获取1-5个
+        if (amount <= 0) {
+            amount = random.nextInt(5) + 1;
+        }
+        
+        if (storedAmount >= amount) {
+            // 从存储中移除物品
+            if (plugin.getCropManager().removeCrop(player.getUniqueId(), cropType, amount)) {
+                // 给玩家物品
+                ItemStack item = new ItemStack(material, amount);
+                player.getInventory().addItem(item);
+                
+                // 发送成功消息
+                Map<String, String> replacements = new HashMap<>();
+                replacements.put("amount", String.valueOf(amount));
+                replacements.put("crop", material.name().toLowerCase());
+                player.sendMessage(messageManager.getMessage("crop.withdraw-success", replacements));
+            } else {
+                // 发送失败消息
+                Map<String, String> replacements = new HashMap<>();
+                replacements.put("crop", material.name().toLowerCase());
+                player.sendMessage(messageManager.getMessage("crop.withdraw-failed", replacements));
+            }
+        } else {
+            // 发送失败消息
+            Map<String, String> replacements = new HashMap<>();
+            replacements.put("crop", material.name().toLowerCase());
+            player.sendMessage(messageManager.getMessage("crop.withdraw-failed", replacements));
+        }
     }
 }

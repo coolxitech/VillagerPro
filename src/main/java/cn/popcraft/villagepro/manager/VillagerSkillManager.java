@@ -3,11 +3,11 @@ package cn.popcraft.villagepro.manager;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.ProfessionSkill;
 import cn.popcraft.villagepro.model.VillagerProfession;
-import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -31,15 +31,12 @@ public class VillagerSkillManager {
      * @return 技能等级
      */
     public int getVillagerSkillLevel(Villager villager, ProfessionSkill skill) {
-        UUID villagerUuid = villager.getUniqueId();
-        Map<ProfessionSkill, Integer> skills = villagerSkills.get(villagerUuid);
-        
-        if (skills != null) {
-            Integer level = skills.get(skill);
-            return level != null ? level : 0;
+        UUID villagerId = villager.getUniqueId();
+        Map<ProfessionSkill, Integer> skills = villagerSkills.get(villagerId);
+        if (skills == null) {
+            return 0;
         }
-        
-        return 0;
+        return skills.getOrDefault(skill, 0);
     }
 
     /**
@@ -50,9 +47,9 @@ public class VillagerSkillManager {
      * @param level    等级
      */
     public void setVillagerSkillLevel(Villager villager, ProfessionSkill skill, int level) {
-        UUID villagerUuid = villager.getUniqueId();
-        Map<ProfessionSkill, Integer> skills = villagerSkills.computeIfAbsent(villagerUuid, k -> new HashMap<>());
-        skills.put(skill, Math.max(0, level)); // 确保等级不小于0
+        UUID villagerId = villager.getUniqueId();
+        Map<ProfessionSkill, Integer> skills = villagerSkills.computeIfAbsent(villagerId, k -> new EnumMap<>(ProfessionSkill.class));
+        skills.put(skill, Math.max(0, level));
     }
 
     /**
@@ -117,6 +114,22 @@ public class VillagerSkillManager {
                 // 增加跳跃高度
                 villager.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, Math.min(level - 1, 2), false, false));
                 break;
+            case REGENERATION:
+                // 生命恢复
+                villager.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, Integer.MAX_VALUE, Math.min(level - 1, 2), false, false));
+                break;
+            case FIRE_RESISTANCE:
+                // 火焰抗性
+                villager.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, false, false));
+                break;
+            case INVISIBILITY:
+                // 隐身
+                villager.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+                break;
+            case LUCK:
+                // 幸运
+                villager.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, Integer.MAX_VALUE, Math.min(level - 1, 3), false, false));
+                break;
             // 其他技能效果可以在这里添加
         }
     }
@@ -146,5 +159,40 @@ public class VillagerSkillManager {
         
         // 应用技能效果
         applyVillagerSkills(villager);
+    }
+    
+    /**
+     * 升级村民技能
+     * @param villager 村民
+     * @param skill 技能
+     * @param levels 要增加的等级数
+     */
+    public void upgradeVillagerSkill(Villager villager, ProfessionSkill skill, int levels) {
+        int currentLevel = getVillagerSkillLevel(villager, skill);
+        int newLevel = Math.min(currentLevel + levels, 5); // 最大等级为5
+        setVillagerSkillLevel(villager, skill, newLevel);
+        
+        // 重新应用技能效果
+        applySkillEffect(villager, skill, newLevel);
+    }
+    
+    /**
+     * 获取村民所有技能的详细信息
+     * @param villager 村民
+     * @return 技能信息字符串
+     */
+    public String getVillagerSkillsInfo(Villager villager) {
+        StringBuilder info = new StringBuilder();
+        VillagerProfession profession = VillagerProfession.fromBukkit(villager.getProfession());
+        
+        info.append("§6=== 村民技能信息 ===\n");
+        info.append("§e职业: §f").append(profession.getDisplayName()).append("\n");
+        
+        for (ProfessionSkill skill : profession.getSkills()) {
+            int level = getVillagerSkillLevel(villager, skill);
+            info.append("§e").append(skill.getDisplayName()).append(": §f等级 ").append(level).append("\n");
+        }
+        
+        return info.toString();
     }
 }

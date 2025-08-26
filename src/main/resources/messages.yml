@@ -49,6 +49,7 @@ task:
   generated: "&a已生成新的任务: &e{description}"
   progress: "&a任务进度: &e{progress}/{target} {task}"
   completed: "&a任务完成! 获得奖励: &e{reward}"
+  reward: "&a任务奖励: &e{exp} 经验 &7| &e{money} 金币"
   pending: "&e任务系统正在开发中..."
 
 # 作物相关消息
@@ -77,6 +78,15 @@ gui:
   back: "&c返回"
   click-to-upgrade: "&e点击升级"
   click-to-interact: "&e点击交互"
+
+# 跟随相关消息
+follow:
+  start: "&a村民开始跟随你"
+  stop: "&a村民停止跟随"
+  stay: "&a村民将停留在此处"
+  free: "&a村民将自由活动"
+  request: "&a发送 y 让村民跟随，n 取消跟随"
+  cancel: "&a村民将不会跟随你"
 
 # 升级类型名称
 upgrade-types:

@@ -13,11 +13,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Material;
 
-/**
- * GUI事件监听器
- */
+import java.util.Random;
+
 public class GUIListener implements Listener {
     private final VillagePro plugin;
+    private final Random random = new Random();
     
     public GUIListener(VillagePro plugin) {
         this.plugin = plugin;
@@ -41,14 +41,14 @@ public class GUIListener implements Listener {
             handleUpgradeGUI(player, clickedItem, event.getRawSlot());
         }
         // 检查是否是产出GUI
-        else if (inventoryTitle.contains(plugin.getMessageManager().getMessage("gui.production-title"))) {
+        else if (inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.production-title", java.util.Map.of()))) {
             event.setCancelled(true);
             handleProductionGUI(player, clickedItem, event.getRawSlot());
         }
         // 检查是否是职业产出GUI
         else if (inventoryTitle.contains(plugin.getMessageManager().getMessage("gui.profession-production-title", java.util.Map.of("profession", "")))) {
             event.setCancelled(true);
-            handleProfessionProductionGUI(player, clickedItem, event.getRawSlot());
+            handleProfessionProductionGUI(player, clickedItem, event.getRawSlot(), event.isRightClick());
         }
     }
     
@@ -124,22 +124,44 @@ public class GUIListener implements Listener {
         }
     }
     
-    private void handleProfessionProductionGUI(Player player, ItemStack clickedItem, int slot) {
+    private void handleProfessionProductionGUI(Player player, ItemStack clickedItem, int slot, boolean isRightClick) {
         // 这里处理具体的职业产出获取逻辑
-        // 由于这是一个简化实现，我们只是关闭GUI并发送一条消息
         switch (slot) {
-            case 22: // 返回按钮
+            case 10: // 第一个产出物品
+                handleProductionItem(player, clickedItem, isRightClick);
+                break;
+            case 11: // 第二个产出物品
+                handleProductionItem(player, clickedItem, isRightClick);
+                break;
+            case 12: // 第三个产出物品
+                handleProductionItem(player, clickedItem, isRightClick);
+                break;
+            case 13: // 第四个产出物品
+                handleProductionItem(player, clickedItem, isRightClick);
+                break;
+            case 14: // 第五个产出物品
+                handleProductionItem(player, clickedItem, isRightClick);
+                break;
+            case 15: // 第六个产出物品
+                handleProductionItem(player, clickedItem, isRightClick);
+                break;
+            case 16: // 第七个产出物品
+                handleProductionItem(player, clickedItem, isRightClick);
+                break;
+            case 49: // 返回按钮 (在54格GUI中位于底部中央)
                 new ProductionGUI(plugin).openMainMenu(player);
                 break;
             default:
-                // 处理具体的产出获取
-                if (clickedItem != null && clickedItem.getType() != Material.AIR) {
-                    // 这里应该实现实际的产出获取逻辑
-                    // 为简化起见，我们只发送一条消息
-                    player.sendMessage("§a你尝试获取 " + clickedItem.getType().name() + " 产出");
-                    player.closeInventory();
-                }
+                handleProductionItem(player, clickedItem, isRightClick);
                 break;
+        }
+    }
+    
+    private void handleProductionItem(Player player, ItemStack clickedItem, boolean isRightClick) {
+        if (clickedItem != null && clickedItem.getType() != Material.AIR && clickedItem.getType() != Material.ARROW) {
+            // 使用ProductionGUI处理产出获取
+            new ProductionGUI(plugin).handleProductionWithdraw(player, clickedItem.getType(), 0, isRightClick);
+            // 不关闭GUI，让玩家可以继续获取其他物品
         }
     }
 }

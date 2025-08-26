@@ -286,12 +286,32 @@ public class TaskManager {
             return;
         }
         
+        Task task = taskData.getCurrentTask();
+        
         // 发放经验或金币奖励
-        player.giveExp(taskData.getCurrentTask().getRewardExp());
-        plugin.getEconomy().depositPlayer(player, taskData.getCurrentTask().getRewardMoney());
+        player.giveExp(task.getRewardExp());
+        plugin.getEconomy().depositPlayer(player, task.getRewardMoney());
         
         // 清除当前任务
         taskData.setCurrentTask(null);
         database.save(taskData);
+        
+        // 发送奖励消息
+        Map<String, String> replacements = new HashMap<>();
+        replacements.put("exp", String.valueOf(task.getRewardExp()));
+        replacements.put("money", String.valueOf(task.getRewardMoney()));
+        player.sendMessage(plugin.getMessageManager().getMessage("task.reward", replacements));
+    }
+    
+    /**
+     * 获取任务进度百分比
+     * @param task 任务
+     * @return 进度百分比
+     */
+    public double getTaskProgressPercentage(Task task) {
+        if (task.getTargetAmount() <= 0) {
+            return 0.0;
+        }
+        return (double) task.getProgress() / task.getTargetAmount() * 100;
     }
 }

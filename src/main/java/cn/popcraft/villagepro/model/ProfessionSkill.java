@@ -1,62 +1,44 @@
 package cn.popcraft.villagepro.model;
 
 /**
- * 职业技能枚举，定义了村民可以拥有的各种技能
+ * 村民职业技能枚举
  */
 public enum ProfessionSkill {
     // 基础技能
-    BASIC,              // 基础技能
+    SPEED("速度", "增加移动速度"),
+    WATER_BREATHING("水下呼吸", "在水下呼吸"),
+    NIGHT_VISION("夜视", "在黑暗中视物"),
+    STRENGTH("力量", "增加攻击力"),
+    RESISTANCE("抗性", "减少受到的伤害"),
+    JUMP_BOOST("跳跃提升", "增加跳跃高度"),
     
-    // 战斗相关技能
-    COMBAT,             // 战斗技能
-    ARCHERY,            // 弓箭技能
-    WEAPON_FORGE,       // 武器锻造技能
+    // 高级技能
+    REGENERATION("生命恢复", "持续恢复生命值"),
+    FIRE_RESISTANCE("火焰抗性", "免疫火焰伤害"),
+    INVISIBILITY("隐身", "使村民隐身"),
+    LUCK("幸运", "增加幸运值"),
     
-    // 防护相关技能
-    PROTECTION,         // 防护技能
-    ARMOR_FORGE,        // 盔甲锻造技能
-    
-    // 挖掘相关技能
-    MINING,             // 挖掘技能
-    TOOL_FORGE,         // 工具锻造技能
-    
-    // 农业相关技能
-    FARMING,            // 农业技能
-    HARVEST,            // 收获技能
-    ANIMAL_BREEDING,    // 动物繁殖技能
-    WOOL_PROCESSING,    // 羊毛处理技能
-    FOOD_PROCESSING,    // 食物加工技能
-    BUTCHERING,         // 屠宰技能
-    
-    // 水上活动相关技能
-    FISHING,            // 钓鱼技能
-    WATER_BREATHING,    // 水下呼吸技能
-    
-    // 魔法相关技能
-    ENCHANTING,         // 附魔技能
-    KNOWLEDGE,          // 知识技能
-    
-    // 治疗相关技能
-    HEALING,            // 治疗技能
-    POTION_BREWING,     // 药水酿造技能
-    
-    // 探索相关技能
-    EXPLORATION,        // 探索技能
-    MAP_MAKING,         // 制图技能
-    
-    // 工艺相关技能
-    ARROW_CRAFTING,     // 箭矢制作技能
-    
-    // 交易相关技能
-    TRADE_BOOST,        // 交易加成技能
-    
-    // 药水效果相关技能
-    SPEED,              // 速度技能
-    NIGHT_VISION,       // 夜视技能
-    STRENGTH,           // 力量技能
-    RESISTANCE,         // 抗性技能
-    JUMP_BOOST,         // 跳跃增强技能
-    
-    // 修复技能
-    REPAIR              // 修复技能
+    // 职业特定技能
+    FARMING("农业", "提高农作物产量"),
+    FISHING("钓鱼", "提高钓鱼效率"),
+    MINING("挖掘", "提高挖掘速度"),
+    ENCHANTING("附魔", "提高附魔能力"),
+    BREEDING("繁殖", "提高动物繁殖效率"),
+    HEALING("治疗", "提高治疗能力");
+
+    private final String displayName;
+    private final String description;
+
+    ProfessionSkill(String displayName, String description) {
+        this.displayName = displayName;
+        this.description = description;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
 }
