@@ -103,7 +103,9 @@ public class VillagePro extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new GUIListener(this), this);
         
         // 注册命令
-        getCommand("village").setExecutor(new VillageCommand(this));
+        VillageCommand villageCommand = new VillageCommand(this);
+        getCommand("village").setExecutor(villageCommand);
+        getCommand("village").setTabCompleter(villageCommand);
         getCommand("recruit").setExecutor(new RecruitCommand(this));
         getCommand("upgrade").setExecutor(new UpgradeCommand(this));
         getCommand("crop").setExecutor(new CropCommand(this));

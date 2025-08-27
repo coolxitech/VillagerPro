@@ -6,20 +6,30 @@ prefix: "&a[VillagePro] &r"
 # 权限消息
 no-permission: "&c你没有权限执行此命令!"
 
+# 帮助消息
+help:
+  title: "&6=== VillagePro 命令帮助 ==="
+  page: "&e第 {current} 页 / 共 {total} 页"
+  command-format: "&a/villagerpro {command} {args} &7- &f{description}"
+  player-only: "&c该命令只能由玩家执行!"
+  invalid-usage: "&c无效的命令用法! 请使用 &a/villagerpro help &c查看帮助"
+  page-info: "&7使用 &e{command} &7查看其他页面"
+  page-not-found: "&c第 {page} 页不存在，总共有 {total} 页"
+
 # 村民相关消息
 villager:
   name: "&a{player}的村民"
   recruited: "&a成功招募了村民!"
   not-found: "&c附近没有可招募的村民!"
   max-reached: "&c你已达到最大村民数量限制!"
-
+  
 # 村庄相关消息
 village:
   created: "&a村庄创建成功!"
   upgraded: "&a村庄升级成功! 当前等级: &e{level}"
   max-level: "&c村庄已达到最高等级!"
   not-found: "&c你还没有村庄，请先创建一个!"
-
+  
 # 升级相关消息
 upgrade:
   trade:
@@ -44,21 +54,52 @@ upgrade:
   failed: "&c升级失败，请确保你有足够的资源!"
   max-level-reached: "&c该能力已达到最高等级!"
 
-# 任务相关消息
-task:
-  generated: "&a已生成新的任务: &e{description}"
-  progress: "&a任务进度: &e{progress}/{target} {task}"
-  completed: "&a任务完成! 获得奖励: &e{reward}"
-  reward: "&a任务奖励: &e{exp} 经验 &7| &e{money} 金币"
-  pending: "&e任务系统正在开发中..."
-
-# 作物相关消息
-crop:
-  collected: "&a村民收集了 {amount} 个 {crop}!"
-  withdraw-success: "&a成功取出 {amount} 个 {crop}!"
-  withdraw-failed: "&c取出失败，请确保你有足够的 {crop}!"
-  storage-empty: "&c你的作物存储是空的!"
-
+# 指令相关消息
+commands:
+  villagepro:
+    description: "显示插件信息和基本用法"
+    usage: "&e使用: &a/villagerpro help [页码]"
+  
+  villager:
+    description: "管理村民的主命令"
+    usage: "&e使用: &a/villager [subcommand] [args]"
+    subcommands:
+      production: "打开村民产出界面"
+      upgrade: "升级村民能力"
+      follow: "切换村民跟随模式"
+      info: "显示村民详细信息"
+      list: "列出所有村民"
+      remove: "移除村民"
+      
+  village:
+    description: "管理村庄的主命令"
+    usage: "&e使用: &a/village [subcommand] [args]"
+    subcommands:
+      create: "创建新村庄"
+      upgrade: "升级村庄"
+      info: "显示村庄信息"
+      
+  recruit:
+    description: "招募新村民"
+    usage: "&e使用: &a/recruit [职业]"
+    
+  crop:
+    description: "管理作物存储和产出"
+    usage: "&e使用: &a/crop [subcommand] [args]"
+    subcommands:
+      withdraw: "取出作物"
+      deposit: "存储作物"
+      balance: "查看作物余额"
+      
+# 跟随相关消息
+follow:
+  start: "&a村民开始跟随你"
+  stop: "&a村民停止跟随"
+  stay: "&a村民将停留在此处"
+  free: "&a村民将自由活动"
+  request: "&a发送 y 让村民跟随，n 取消跟随"
+  cancel: "&a村民将不会跟随你"
+  
 # GUI相关消息
 gui:
   upgrade-title: "&6村民升级"
@@ -76,18 +117,38 @@ gui:
   cancel: "&c&l取消"
   close: "&c&l关闭"
   back: "&c返回"
-  click-to-upgrade: "&e点击升级"
   click-to-interact: "&e点击交互"
-
-# 跟随相关消息
-follow:
-  start: "&a村民开始跟随你"
-  stop: "&a村民停止跟随"
-  stay: "&a村民将停留在此处"
-  free: "&a村民将自由活动"
-  request: "&a发送 y 让村民跟随，n 取消跟随"
-  cancel: "&a村民将不会跟随你"
-
+  page-info: "&7使用 &e{command} &7查看其他页面"
+  
+# 作物相关消息
+crop:
+  collected: "&a村民收集了 {amount} 个 {crop}!"
+  withdraw-success: "&a成功取出 {amount} 个 {crop}!"
+  withdraw-failed: "&c取出失败，请确保你有足够的 {crop}!"
+  storage-empty: "&c你的作物存储是空的!"
+  balance: "&a你当前存储的 {crop}: &e{amount} 个"
+  deposit-success: "&a成功存储了 {amount} 个 {crop}!"
+  deposit-failed: "&c存储失败，请确保你有足够的 {crop}!"
+  
+# 任务相关消息
+task:
+  generated: "&a已生成新的任务: &e{description}"
+  progress: "&a任务进度: &e{progress}/{target} {task}"
+  completed: "&a任务完成! 获得奖励: &e{reward}"
+  reward: "&a任务奖励: &e{exp} 经验 &7| &e{money} 金币"
+  pending: "&e任务系统正在开发中..."
+  
+# 招募相关消息
+recruit:
+  success: "&a成功招募了一名村民!"
+  failed: "&c招募失败，请确保你有足够的资源!"
+  max-villagers-reached: "&c你已达到最大村民数量限制!"
+  
+# 配置相关消息
+config:
+  invalid-upgrade-type: "未知的升级类型: {type}"
+  invalid-upgrade-level: "无效的升级等级: {level}"
+  
 # 升级类型名称
 upgrade-types:
   TRADE: "交易能力"
@@ -96,6 +157,7 @@ upgrade-types:
   PROTECTION: "防护能力"
   RESTOCK_SPEED: "补货速度"
   CROP_GROWTH: "作物产量"
+  CROP_YIELD: "作物产量"
   TRADE_AMOUNT: "交易数量"
   TRADE_QUALITY: "交易质量"
   TRADE_PRICE: "交易价格"

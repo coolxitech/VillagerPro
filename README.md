@@ -15,32 +15,151 @@ VillagerPro 是一个 Minecraft 服务器插件，专注于村庄和村民的管
 2. 重启服务器以加载插件。
 3. 插件会自动生成默认配置文件 `config.yml`。
 
-## 配置文档
-### `config.yml`
+### config.yml
 ```yaml
-# 村庄配置
-village:
-  max_level: 5  # 村庄最大等级
-  upgrade_cost: 1000  # 升级所需金币
-
-# 任务配置
-task:
-  reward_exp: 50  # 任务奖励经验
-  reward_money: 100  # 任务奖励金币
-  task_types: ["COLLECT_WHEAT", "KILL_ZOMBIE", "DELIVER_POTION"]  # 可用任务类型
+# 村庄升级配置
+upgrades:
+  TRADE_AMOUNT:
+    cost-money: 100
+    cost-diamonds: 5
+    cost-items:
+      IRON_INGOT: 10
+  TRADE_QUALITY:
+    cost-money: 200
+    cost-diamonds: 10
+    cost-items:
+      GOLD_INGOT: 15
+  TRADE_PRICE:
+    cost-money: 150
+    cost-diamonds: 7
+    cost-items:
+      EMERALD: 5
+  RESTOCK_SPEED:
+    cost-money: 80
+    cost-diamonds: 3
+    cost-items:
+      WHEAT: 20
+  CROP_YIELD:
+    cost-money: 120
+    cost-diamonds: 6
+    cost-items:
+      SEEDS: 30
 ```
 
-## 命令列表
-| 命令 | 描述 | 权限 |
-|------|------|------|
-| `/village create` | 创建村庄 | `villagepro.create` |
-| `/village upgrade` | 升级村庄 | `villagepro.upgrade` |
-| `/task generate` | 生成随机任务 | `villagepro.task.generate` |
+## 命令帮助
+
+### 主命令
+#### `/villagerpro help [页码]`
+- 描述: 显示插件所有可用命令的帮助信息
+- 权限: 默认所有玩家
+
+#### `/villagerpro village create`
+- 描述: 创建一个新的村庄
+- 权限: `villagerpro.village.create` 或 `villagerpro.admin`
+
+#### `/villagerpro village upgrade <level>`
+- 描述: 升级村庄到指定等级
+- 参数: `<level>` - 要升级到的等级
+- 权限: `villagerpro.village.upgrade` 或 `villagerpro.admin`
+
+#### `/villagerpro village info`
+- 描述: 显示村庄详细信息
+- 权限: `villagerpro.village.info` 或 `villagerpro.admin`
+
+### 村民相关命令
+
+#### `/villager production`
+- 描述: 打开村民产出界面，可以获取村民生产的物品
+- 权限: `villagerpro.villager.production` 或 `villagerpro.admin`
+
+#### `/villager upgrade <type> <level>`
+- 描述: 升级村民能力
+- 参数: 
+  - `<type>` - 要升级的能力类型
+  - `<level>` - 要升级到的等级
+- 升级类型:
+  - `TRADE_AMOUNT` - 提高村民交易数量
+  - `TRADE_QUALITY` - 提高村民交易物品质量
+  - `TRADE_PRICE` - 提高村民交易价格
+  - `RESTOCK_SPEED` - 提高村民补货速度
+  - `CROP_YIELD` - 提高农民作物产量
+- 权限: `villagerpro.villager.upgrade` 或 `villagerpro.admin`
+
+#### `/villager follow [mode]`
+- 描述: 切换村民跟随模式
+- 模式:
+  - `free` - 自由活动
+  - `follow` - 跟随玩家
+  - `stay` - 停留原地
+- 权限: `villagerpro.villager.follow` 或 `villagerpro.admin`
+
+#### `/villager info`
+- 描述: 显示当前村民的详细信息，包括职业、技能等级等
+- 权限: `villagerpro.villager.info` 或 `villagerpro.admin`
+
+#### `/villager list`
+- 描述: 列出玩家所有村民
+- 权限: `villagerpro.villager.list` 或 `villagerpro.admin`
+
+#### `/villager remove <id>`
+- 描述: 移除指定ID的村民
+- 参数: `<id>` - 要移除的村民ID
+- 权限: `villagerpro.villager.remove` 或 `villagerpro.admin`
+
+### 村庄相关命令
+
+#### `/village create`
+- 描述: 创建一个新的村庄
+- 权限: `villagerpro.village.create` 或 `villagerpro.admin`
+
+#### `/village upgrade <level>`
+- 描述: 升级村庄到指定等级
+- 参数: `<level>` - 要升级到的等级
+- 权限: `villagerpro.village.upgrade` 或 `villagerpro.admin`
+
+#### `/village info`
+- 描述: 显示村庄详细信息
+- 权限: `villagerpro.village.info` 或 `villagerpro.admin`
+
+### 作物管理命令
+
+#### `/crop balance`
+- 描述: 查看玩家当前存储的作物数量
+- 权限: `villagerpro.crop.balance` 或 `villagerpro.admin`
+
+#### `/crop withdraw <type> [amount]`
+- 描述: 取出指定类型的作物
+- 参数: 
+  - `<type>` - 要取出的作物类型
+  - `[amount]` - 要取出的数量（可选）
+- 权限: `villagerpro.crop.withdraw` 或 `villagerpro.admin`
+
+#### `/crop deposit <type> [amount]`
+- 描述: 存储指定类型的作物
+- 参数:
+  - `<type>` - 要存储的作物类型
+  - `[amount]` - 要存储的数量（可选）
+- 权限: `villagerpro.crop.deposit` 或 `villagerpro.admin`
 
 ## 权限节点
-- `villagepro.create`：允许创建村庄。
-- `villagepro.upgrade`：允许升级村庄。
-- `villagepro.task.generate`：允许生成任务。
+
+### 村庄权限
+- `villagerpro.village.create` - 允许创建村庄
+- `villagerpro.village.upgrade` - 允许升级村庄
+- `villagerpro.village.info` - 允许查看村庄信息
+
+### 村民权限
+- `villagerpro.villager.production` - 允许打开产出界面
+- `villagerpro.villager.upgrade` - 允许升级村民
+- `villagerpro.villager.follow` - 允许切换村民跟随模式
+- `villagerpro.villager.info` - 允许查看村民信息
+- `villagerpro.villager.list` - 允许列出所有村民
+- `villagerpro.villager.remove` - 允许移除村民
+
+### 作物权限
+- `villagerpro.crop.balance` - 允许查看作物余额
+- `villagerpro.crop.withdraw` - 允许取出作物
+- `villagerpro.crop.deposit` - 允许存储作物
 
 ## 任务系统
 ### 任务类型
