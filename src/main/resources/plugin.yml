@@ -1,5 +1,5 @@
 name: VillagePro
-version: 1.1.4
+version: 1.1.7
 main: cn.popcraft.villagepro.VillagePro
 api-version: 1.19
 depend: [Vault]

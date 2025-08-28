@@ -10,6 +10,7 @@ import cn.popcraft.villagepro.model.VillagerEntity;
 import cn.popcraft.villagepro.model.FollowMode;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -144,6 +145,7 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.YELLOW + "/villager list" + ChatColor.GRAY + " - " + ChatColor.WHITE + "列出所有村民");
             player.sendMessage(ChatColor.YELLOW + "/villager remove <id>" + ChatColor.GRAY + " - " + ChatColor.WHITE + "移除村民");
             player.sendMessage(ChatColor.YELLOW + "/villager recruit" + ChatColor.GRAY + " - " + ChatColor.WHITE + "招募附近的村民");
+            player.sendMessage(ChatColor.YELLOW + "/villager recruit help" + ChatColor.GRAY + " - " + ChatColor.WHITE + "查看招募条件");
             player.sendMessage(ChatColor.YELLOW + "/villager help [页码]" + ChatColor.GRAY + " - " + ChatColor.WHITE + "显示帮助信息");
             
             // 发送分页提示
@@ -508,6 +510,12 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
         
         @Override
         public void execute(Player player, String[] args) {
+            // 如果有帮助参数，显示招募条件
+            if (args.length > 1 && args[1].equalsIgnoreCase("help")) {
+                showRecruitRequirements(player);
+                return;
+            }
+            
             // 查找最近的未招募村民
             Villager villager = plugin.getVillageManager().findNearestUnrecruitedVillager(player, 5);
             if (villager == null) {
@@ -523,6 +531,43 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
                 plugin.getFollowManager().requestFollow(player, villager);
             }
             // recruitVillager方法内部已经发送了具体的错误消息
+        }
+        
+        private void showRecruitRequirements(Player player) {
+            player.sendMessage(ChatColor.GOLD + "=== 村民招募条件 ===");
+            
+            // 显示最大村民数量
+            int maxVillagers = plugin.getConfigManager().getMaxVillagers();
+            player.sendMessage(ChatColor.WHITE + "最大村民数量: " + ChatColor.YELLOW + maxVillagers);
+            
+            // 显示所需金钱
+            double costMoney = plugin.getConfigManager().getRecruitCostMoney();
+            if (costMoney > 0) {
+                player.sendMessage(ChatColor.WHITE + "所需金钱: " + ChatColor.YELLOW + costMoney);
+            }
+            
+            // 显示所需物品
+            Map<String, Integer> costItems = plugin.getConfigManager().getRecruitCostItems();
+            if (!costItems.isEmpty()) {
+                player.sendMessage(ChatColor.WHITE + "所需物品:");
+                for (Map.Entry<String, Integer> entry : costItems.entrySet()) {
+                    String itemName = entry.getKey();
+                    int amount = entry.getValue();
+                    // 尝试获取物品的显示名称
+                    String displayName;
+                    try {
+                        Material material = Material.valueOf(itemName);
+                        displayName = material.name().toLowerCase().replace("_", " ");
+                    } catch (IllegalArgumentException e) {
+                        displayName = itemName.toLowerCase().replace("_", " ");
+                    }
+                    player.sendMessage("  " + ChatColor.GRAY + "- " + ChatColor.WHITE + displayName + ": " + ChatColor.YELLOW + amount);
+                }
+            } else {
+                player.sendMessage(ChatColor.WHITE + "所需物品: " + ChatColor.YELLOW + "无");
+            }
+            
+            player.sendMessage(ChatColor.GRAY + "使用 /villager recruit 招募村民");
         }
     }
 }

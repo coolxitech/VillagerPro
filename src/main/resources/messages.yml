@@ -136,5 +136,5 @@ upgrade-types:
 # 招募相关消息
 recruit:
   success: "&a成功招募了一名村民!"
-  failed: "&c招募失败，请确保你有足够的资源!"
+  failed: "&c招募失败，请确保你有足够的资源!使用 /villager recruit help 查看帮助。"
   max-villagers-reached: "&c你已达到最大村民数量限制!"
