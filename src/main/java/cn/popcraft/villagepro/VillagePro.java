@@ -5,32 +5,19 @@ import cn.popcraft.villagepro.command.RecruitCommand;
 import cn.popcraft.villagepro.command.UpgradeCommand;
 import cn.popcraft.villagepro.command.VillageCommand;
 import cn.popcraft.villagepro.command.VillagerCommand;
-import cn.popcraft.villagepro.listener.CropListener;
-import cn.popcraft.villagepro.listener.GUIListener;
-import cn.popcraft.villagepro.listener.VillagerListener;
-import cn.popcraft.villagepro.listener.SkillListener;
-import cn.popcraft.villagepro.manager.ConfigManager;
-import cn.popcraft.villagepro.manager.CropManager;
-import cn.popcraft.villagepro.manager.FollowManager;
-import cn.popcraft.villagepro.manager.MessageManager;
-import cn.popcraft.villagepro.manager.VillageManager;
-import cn.popcraft.villagepro.manager.TaskManager;
-import cn.popcraft.villagepro.manager.VillagerSkillManager;
+import cn.popcraft.villagepro.gui.ProductionGUI;
+import cn.popcraft.villagepro.listener.*;
+import cn.popcraft.villagepro.manager.*;
 import cn.popcraft.villagepro.model.VillagerEntity;
 import cn.popcraft.villagepro.storage.SQLiteStorage;
 import cn.popcraft.villagepro.util.VillagerUtils;
-import org.bukkit.plugin.RegisteredServiceProvider;
-import net.milkbowl.vault.economy.Economy;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.RegisteredServiceProvider;
-import org.jetbrains.annotations.NotNull;
-
 import com.google.gson.Gson;
 import net.milkbowl.vault.economy.Economy;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.*;
 
 public class VillagePro extends JavaPlugin {
     private static VillagePro instance;
@@ -247,4 +234,15 @@ public class VillagePro extends JavaPlugin {
         return database;
     }
     
+    private final ProductionGUI productionGUI = new ProductionGUI(this);
+
+    @NotNull
+    public ProductionGUI getProductionGUI() {
+        return productionGUI;
+    }
+    
+    @NotNull
+    public VillagerListener getVillagerListener() {
+        return villagerListener;
+    }
 }

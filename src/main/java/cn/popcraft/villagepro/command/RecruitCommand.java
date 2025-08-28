@@ -19,7 +19,12 @@ public class RecruitCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
+            sender.sendMessage(plugin.getMessageManager().getMessage("help.player-only"));
+            return true;
+        }
+        
+        if (!player.hasPermission("villagepro.recruit") && !player.hasPermission("villagepro.admin")) {
+            player.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
 
@@ -36,9 +41,8 @@ public class RecruitCommand implements CommandExecutor {
             
             // 询问是否跟随
             plugin.getFollowManager().requestFollow(player, villager);
-        } else {
-            player.sendMessage(plugin.getMessageManager().getMessage("recruit.failed"));
         }
+        // recruitVillager方法内部已经发送了具体的错误消息
 
         return true;
     }

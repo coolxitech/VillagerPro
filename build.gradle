@@ -3,7 +3,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 group = 'cn.popcraft'
-version = '1.1.2-SNAPSHOT'
+version = '1.1.6-SNAPSHOT'
 description = 'Spigot Plugin'
 
 repositories {

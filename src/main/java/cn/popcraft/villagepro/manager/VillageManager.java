@@ -129,8 +129,8 @@ public class VillageManager {
             if (entity instanceof Villager) {
                 Villager villager = (Villager) entity;
                 
-                // 检查是否已被招募
-                if (!VillagerUtils.isRecruited(villager)) {
+                // 检查村民是否有效且未被招募
+                if (villager.isValid() && !VillagerUtils.isRecruited(villager)) {
                     double distance = player.getLocation().distance(villager.getLocation());
                     if (distance < minDistance) {
                         minDistance = distance;
@@ -150,8 +150,15 @@ public class VillageManager {
      * @return 是否成功招募
      */
     public boolean recruitVillager(Player player, Villager villager) {
+        // 检查村民是否有效
+        if (villager == null || !villager.isValid()) {
+            player.sendMessage(plugin.getMessageManager().getMessage("villager.not-found"));
+            return false;
+        }
+        
         // 检查村民是否已被招募
         if (VillagerUtils.isRecruited(villager)) {
+            player.sendMessage(plugin.getMessageManager().getMessage("villager.already-recruited"));
             return false;
         }
         
@@ -161,11 +168,13 @@ public class VillageManager {
         // 检查是否达到最大村民数量
         int maxVillagers = plugin.getConfigManager().getMaxVillagers();
         if (village.getVillagerIds().size() >= maxVillagers) {
+            player.sendMessage(plugin.getMessageManager().getMessage("villager.max-villagers-reached"));
             return false;
         }
         
         // 检查玩家是否有足够的资源
         if (!hasEnoughResources(player)) {
+            player.sendMessage(plugin.getMessageManager().getMessage("recruit.failed"));
             return false;
         }
         

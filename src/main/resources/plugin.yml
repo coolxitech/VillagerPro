@@ -1,5 +1,5 @@
 name: VillagePro
-version: 1.0
+version: 1.1.4
 main: cn.popcraft.villagepro.VillagePro
 api-version: 1.19
 depend: [Vault]
@@ -8,15 +8,86 @@ commands:
     description: 村庄系统主命令
     aliases: [v]
     usage: /village
+    permission: villagepro.village
   recruit:
     description: 招募一个村民
     usage: /recruit
+    permission: villagepro.recruit
   upgrade:
     description: 打开村民升级界面
     usage: /upgrade
+    permission: villagepro.upgrade
   crop:
     description: 管理村民收集的作物
     usage: /crop [list|withdraw <作物类型> <数量>]
+    permission: villagepro.crop
   villager:
     description: 村民管理综合命令
     usage: /villager [recruit|upgrade|help]
+    permission: villagepro.villager
+permissions:
+  villagepro.*:
+    description: 允许使用所有村庄功能
+    default: op
+    children:
+      villagepro.village: true
+      villagepro.recruit: true
+      villagepro.upgrade: true
+      villagepro.crop: true
+      villagepro.villager: true
+  villagepro.village:
+    description: 允许使用村庄命令
+    default: true
+    children:
+      villagepro.village.create: true
+      villagepro.village.upgrade: true
+      villagepro.village.info: true
+  villagepro.village.create:
+    description: 允许创建村庄
+    default: true
+  villagepro.village.upgrade:
+    description: 允许升级村庄
+    default: true
+  villagepro.village.info:
+    description: 允许查看村庄信息
+    default: true
+  villagepro.recruit:
+    description: 允许招募村民
+    default: true
+  villagepro.upgrade:
+    description: 允许升级村民
+    default: true
+  villagepro.crop:
+    description: 允许管理作物
+    default: true
+  villagepro.villager:
+    description: 允许管理村民
+    default: true
+    children:
+      villagepro.villager.production: true
+      villagepro.villager.upgrade: true
+      villagepro.villager.follow: true
+      villagepro.villager.info: true
+      villagepro.villager.list: true
+      villagepro.villager.remove: true
+  villagepro.villager.production:
+    description: 允许打开村民产出界面
+    default: true
+  villagepro.villager.upgrade:
+    description: 允许升级村民能力
+    default: true
+  villagepro.villager.follow:
+    description: 允许切换村民跟随模式
+    default: true
+  villagepro.villager.info:
+    description: 允许查看村民信息
+    default: true
+  villagepro.villager.list:
+    description: 允许列出村民
+    default: true
+  villagepro.villager.remove:
+    description: 允许移除村民
+    default: true
+  villagepro.admin:
+    description: 管理员权限，允许绕过所有限制
+    default: op

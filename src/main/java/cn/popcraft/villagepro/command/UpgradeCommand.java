@@ -19,7 +19,12 @@ public class UpgradeCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
+            sender.sendMessage(plugin.getMessageManager().getMessage("help.player-only"));
+            return true;
+        }
+        
+        if (!player.hasPermission("villagepro.upgrade") && !player.hasPermission("villagepro.admin")) {
+            player.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
 

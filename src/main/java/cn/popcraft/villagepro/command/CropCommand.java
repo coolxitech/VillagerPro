@@ -24,7 +24,12 @@ public class CropCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(ChatColor.RED + "只有玩家可以使用此命令！");
+            sender.sendMessage(plugin.getMessageManager().getMessage("help.player-only"));
+            return true;
+        }
+        
+        if (!player.hasPermission("villagepro.crop") && !player.hasPermission("villagepro.admin")) {
+            player.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
         
@@ -78,6 +83,45 @@ public class CropCommand implements CommandExecutor, TabCompleter {
                         return true;
                     }
                     storeCrop(player, args[1], storeAmount);
+                } catch (NumberFormatException e) {
+                    player.sendMessage(ChatColor.RED + "无效的数量: " + args[2]);
+                }
+                break;
+            case "balance":
+                showCropList(player);
+                break;
+            case "withdraw":
+                if (args.length < 2) {
+                    player.sendMessage(ChatColor.RED + "用法: /crop withdraw <作物类型> [数量]");
+                    return true;
+                }
+                int withdrawAmount = 1;
+                if (args.length >= 3) {
+                    try {
+                        withdrawAmount = Integer.parseInt(args[2]);
+                        if (withdrawAmount <= 0) {
+                            player.sendMessage(ChatColor.RED + "数量必须大于0！");
+                            return true;
+                        }
+                    } catch (NumberFormatException e) {
+                        player.sendMessage(ChatColor.RED + "无效的数量: " + args[2]);
+                        return true;
+                    }
+                }
+                harvestCrop(player, args[1], withdrawAmount); // withdraw与harvest功能相同
+                break;
+            case "deposit":
+                if (args.length < 3) {
+                    player.sendMessage(ChatColor.RED + "用法: /crop deposit <作物类型> <数量>");
+                    return true;
+                }
+                try {
+                    int depositAmount = Integer.parseInt(args[2]);
+                    if (depositAmount <= 0) {
+                        player.sendMessage(ChatColor.RED + "数量必须大于0！");
+                        return true;
+                    }
+                    storeCrop(player, args[1], depositAmount); // deposit与store功能相同
                 } catch (NumberFormatException e) {
                     player.sendMessage(ChatColor.RED + "无效的数量: " + args[2]);
                 }
@@ -169,6 +213,9 @@ public class CropCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.WHITE + "/crop info <作物类型> - 显示作物信息");
         player.sendMessage(ChatColor.WHITE + "/crop harvest <作物类型> [数量] - 收获作物");
         player.sendMessage(ChatColor.WHITE + "/crop store <作物类型> <数量> - 存储作物");
+        player.sendMessage(ChatColor.WHITE + "/crop balance - 查看作物余额");
+        player.sendMessage(ChatColor.WHITE + "/crop withdraw <作物类型> [数量] - 取出作物");
+        player.sendMessage(ChatColor.WHITE + "/crop deposit <作物类型> <数量> - 存入作物");
         player.sendMessage(ChatColor.WHITE + "/crop help - 显示此帮助信息");
     }
     
@@ -178,21 +225,25 @@ public class CropCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
-            List<String> subCommands = Arrays.asList("list", "info", "harvest", "store", "help");
+            List<String> subCommands = Arrays.asList("list", "info", "harvest", "store", "balance", "withdraw", "deposit", "help");
+            String finalArg = args[0].toLowerCase();
             return subCommands.stream()
-                    .filter(cmd -> cmd.toLowerCase().startsWith(args[0].toLowerCase()))
+                    .filter(cmd -> cmd.toLowerCase().startsWith(finalArg))
                     .collect(Collectors.toList());
         } else if (args.length == 2) {
             String subCommand = args[0].toLowerCase();
-            if (subCommand.equals("info") || subCommand.equals("harvest") || subCommand.equals("store")) {
+            if (subCommand.equals("info") || subCommand.equals("harvest") || subCommand.equals("store") 
+                || subCommand.equals("withdraw") || subCommand.equals("deposit")) {
                 List<String> cropTypes = getCropTypes();
+                String finalArg = args[1].toLowerCase();
                 return cropTypes.stream()
-                        .filter(crop -> crop.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .filter(crop -> crop.toLowerCase().startsWith(finalArg))
                         .collect(Collectors.toList());
             }
         } else if (args.length == 3) {
             String subCommand = args[0].toLowerCase();
-            if (subCommand.equals("harvest") || subCommand.equals("store")) {
+            if (subCommand.equals("harvest") || subCommand.equals("store") 
+                || subCommand.equals("withdraw") || subCommand.equals("deposit")) {
                 return Arrays.asList("1", "8", "16", "32", "64");
             }
         }

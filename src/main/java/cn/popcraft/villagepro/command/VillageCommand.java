@@ -9,6 +9,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,13 +27,19 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage(messageManager.getMessage("help.player-only"));
             return true;
         }
         
         Player player = (Player) sender;
+        
+        // 检查基本权限
+        if (!player.hasPermission("villagepro.village") && !player.hasPermission("villagepro.admin")) {
+            player.sendMessage(messageManager.getMessage("no-permission"));
+            return true;
+        }
         
         // 无参数或无效参数，显示帮助信息
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
@@ -42,7 +49,7 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
         
         // 处理子命令
         if (args[0].equalsIgnoreCase("create")) {
-            if (player.hasPermission("villagerpro.village.create") || player.hasPermission("villagerpro.admin")) {
+            if (player.hasPermission("villagepro.village.create") || player.hasPermission("villagepro.admin")) {
                 plugin.getVillageManager().getOrCreateVillage(player);
                 player.sendMessage(messageManager.getMessage("village.created"));
             } else {
@@ -50,8 +57,16 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         } else if (args[0].equalsIgnoreCase("upgrade")) {
-            if (player.hasPermission("villagerpro.village.upgrade") || player.hasPermission("villagerpro.admin")) {
-                if (args.length > 1) {
+            if (player.hasPermission("villagepro.village.upgrade") || player.hasPermission("villagepro.admin")) {
+                if (args.length > 2) {
+                    try {
+                        UpgradeType type = UpgradeType.valueOf(args[1].toUpperCase());
+                        // 这里应该使用第二个参数作为等级，但目前插件设计是逐级升级
+                        plugin.getVillageManager().upgradeVillage(player, type);
+                    } catch (IllegalArgumentException e) {
+                        player.sendMessage(messageManager.getMessage("help.invalid-usage"));
+                    }
+                } else if (args.length > 1) {
                     try {
                         UpgradeType type = UpgradeType.valueOf(args[1].toUpperCase());
                         plugin.getVillageManager().upgradeVillage(player, type);
@@ -59,18 +74,14 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
                         player.sendMessage(messageManager.getMessage("help.invalid-usage"));
                     }
                 } else {
-                player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
-                    "command", "village upgrade",
-                    "args", "<类型>",
-                    "description", "升级村庄指定类型")));
+                    player.sendMessage(messageManager.getMessage("help.invalid-usage"));
                 }
-                return true;
             } else {
                 player.sendMessage(messageManager.getMessage("no-permission"));
-                return true;
             }
+            return true;
         } else if (args[0].equalsIgnoreCase("info")) {
-            if (player.hasPermission("villagerpro.village.info") || player.hasPermission("villagerpro.admin")) {
+            if (player.hasPermission("villagepro.village.info") || player.hasPermission("villagepro.admin")) {
                 showVillageInfo(player);
             } else {
                 player.sendMessage(messageManager.getMessage("no-permission"));
@@ -107,7 +118,7 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
         for (Map.Entry<UpgradeType, Integer> entry : village.getUpgradeLevels().entrySet()) {
             UpgradeType type = entry.getKey();
             int level = entry.getValue();
-            String typeName = messageManager.getMessage("upgrade-types." + type.name(), type.name());
+            String typeName = messageManager.getMessage("upgrade-types." + type.name(), new HashMap<>());
             player.sendMessage("  §7- §f" + typeName + ": §e" + level);
         }
     }
