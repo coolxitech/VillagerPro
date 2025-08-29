@@ -148,7 +148,24 @@ upgrades:
 - `villagerpro.village.upgrade` - 允许升级村庄
 - `villagerpro.village.info` - 允许查看村庄信息
 
-### 村民权限
+### 经济系统支持
+
+VillagerPro 支持所有与 Vault 兼容的经济插件，包括但不限于:
+- EssentialsX Economy 
+- CMI Economy
+- TheNewEconomy
+- GemsEconomy
+- BOSEconomy
+- iConomy
+
+### CMI 经济系统配置
+
+如果您使用 CMI 经济系统，请确保:
+1. 安装了 Vault 插件
+2. 在 CMI 配置文件中启用了经济系统 (`Economy enabled: true`)
+3. (可选) 使用兼容 CMI 的 Vault 版本或 CMIInjector
+
+## 村民权限
 - `villagerpro.villager.production` - 允许打开产出界面
 - `villagerpro.villager.upgrade` - 允许升级村民
 - `villagerpro.villager.follow` - 允许切换村民跟随模式

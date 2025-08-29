@@ -2,182 +2,183 @@ package cn.popcraft.villagepro.command;
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.MessageManager;
+import cn.popcraft.villagepro.manager.VillageManager;
 import cn.popcraft.villagepro.model.UpgradeType;
 import cn.popcraft.villagepro.model.Village;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class VillageCommand implements CommandExecutor, TabCompleter {
     private final VillagePro plugin;
     private final MessageManager messageManager;
+    private final VillageManager villageManager;
     
     public VillageCommand(VillagePro plugin) {
         this.plugin = plugin;
         this.messageManager = plugin.getMessageManager();
+        this.villageManager = plugin.getVillageManager();
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(messageManager.getMessage("help.player-only"));
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("该命令只能由玩家执行!");
             return true;
         }
-        
-        Player player = (Player) sender;
-        
-        // 检查基本权限
-        if (!player.hasPermission("villagepro.village") && !player.hasPermission("villagepro.admin")) {
-            player.sendMessage(messageManager.getMessage("no-permission"));
+
+        if (args.length == 0) {
+            sendHelpMessage(player, 1);
             return true;
         }
+
+        String subCommand = args[0].toLowerCase();
         
-        // 无参数或无效参数，显示帮助信息
-        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
-            sendHelpMessage(player);
-            return true;
-        }
-        
-        // 处理子命令
-        if (args[0].equalsIgnoreCase("create")) {
-            if (player.hasPermission("villagepro.village.create") || player.hasPermission("villagepro.admin")) {
-                plugin.getVillageManager().getOrCreateVillage(player);
-                player.sendMessage(messageManager.getMessage("village.created"));
-            } else {
-                player.sendMessage(messageManager.getMessage("no-permission"));
-            }
-            return true;
-        } else if (args[0].equalsIgnoreCase("upgrade")) {
-            if (player.hasPermission("villagepro.village.upgrade") || player.hasPermission("villagepro.admin")) {
-                if (args.length > 2) {
-                    try {
-                        UpgradeType type = UpgradeType.valueOf(args[1].toUpperCase());
-                        // 这里应该使用第二个参数作为等级，但目前插件设计是逐级升级
-                        plugin.getVillageManager().upgradeVillage(player, type);
-                    } catch (IllegalArgumentException e) {
-                        player.sendMessage(messageManager.getMessage("help.invalid-usage"));
-                    }
-                } else if (args.length > 1) {
-                    try {
-                        UpgradeType type = UpgradeType.valueOf(args[1].toUpperCase());
-                        plugin.getVillageManager().upgradeVillage(player, type);
-                    } catch (IllegalArgumentException e) {
-                        player.sendMessage(messageManager.getMessage("help.invalid-usage"));
-                    }
-                } else {
-                    player.sendMessage(messageManager.getMessage("help.invalid-usage"));
+        switch (subCommand) {
+            case "create":
+                if (!player.hasPermission("villagepro.village.create")) {
+                    player.sendMessage(messageManager.getMessage("no-permission"));
+                    return true;
                 }
-            } else {
-                player.sendMessage(messageManager.getMessage("no-permission"));
-            }
-            return true;
-        } else if (args[0].equalsIgnoreCase("info")) {
-            if (player.hasPermission("villagepro.village.info") || player.hasPermission("villagepro.admin")) {
+                
+                // 创建村庄
+                Village village = villageManager.getOrCreateVillage(player);
+                
+                // 发送成功消息
+                player.sendMessage(messageManager.getMessage("village.created"));
+                return true;
+                
+            case "info":
+                if (!player.hasPermission("villagepro.village.info")) {
+                    player.sendMessage(messageManager.getMessage("no-permission"));
+                    return true;
+                }
+                
+                // 显示村庄信息
                 showVillageInfo(player);
-            } else {
-                player.sendMessage(messageManager.getMessage("no-permission"));
-            }
-            return true;
+                return true;
+                
+            case "upgrade":
+                if (!player.hasPermission("villagepro.village.upgrade")) {
+                    player.sendMessage(messageManager.getMessage("no-permission"));
+                    return true;
+                }
+                
+                // 升级村庄
+                if (args.length < 2) {
+                    player.sendMessage(messageManager.getMessage("help.command-format", Map.of("command", "upgrade", "args", "<level>", "description", "升级村庄")));
+                    return true;
+                }
+                
+                try {
+                    int level = Integer.parseInt(args[1]);
+                    Village existingVillage = villageManager.getVillage(player.getUniqueId());
+                    if (existingVillage == null) {
+                        player.sendMessage(messageManager.getMessage("village.not-found"));
+                        return true;
+                    }
+                    
+                    // 执行升级逻辑
+                    // TODO: 实际升级逻辑
+                    player.sendMessage(messageManager.getMessage("village.upgraded", Map.of("level", String.valueOf(level))));
+                } catch (NumberFormatException e) {
+                    player.sendMessage(messageManager.getMessage("errors.invalid-upgrade-level"));
+                }
+                
+                return true;
+                
+            case "help":
+                sendHelpMessage(player, 1);
+                return true;
+                
+            default:
+                player.sendMessage(messageManager.getMessage("errors.invalid-subcommand", Map.of("command", args[0])));
+                sendHelpMessage(player, 1);
+                return true;
         }
-        
-        // 未知命令
-        player.sendMessage(messageManager.getMessage("help.invalid-usage"));
-        return true;
     }
     
-    /**
-     * 显示村庄信息
-     * @param player 玩家
-     */
     private void showVillageInfo(Player player) {
-        Village village = plugin.getVillageManager().getVillage(player.getUniqueId());
-        
+        Village village = villageManager.getVillage(player.getUniqueId());
         if (village == null) {
             player.sendMessage(messageManager.getMessage("village.not-found"));
             return;
         }
         
-        // 发送村庄信息标题
-        player.sendMessage("§a===== 村庄信息 =====");
+        player.sendMessage("-------------------------");
+        player.sendMessage("村庄信息:");
+        player.sendMessage("村民数量: " + village.getVillagerIds().size());
+        player.sendMessage("村庄升级:");
         
-        // 显示村民数量
-        int villagerCount = village.getVillagerIds().size();
-        player.sendMessage("§e村民数量: §f" + villagerCount);
-        
-        // 显示升级信息
-        player.sendMessage("§e村庄升级:");
         for (Map.Entry<UpgradeType, Integer> entry : village.getUpgradeLevels().entrySet()) {
-            UpgradeType type = entry.getKey();
+            UpgradeType upgradeType = entry.getKey();
             int level = entry.getValue();
-            String typeName = messageManager.getMessage("upgrade-types." + type.name(), new HashMap<>());
-            player.sendMessage("  §7- §f" + typeName + ": §e" + level);
+            String upgradeName = upgradeType.name();
+            
+            // 尝试从消息配置中获取升级类型名称
+            String localizedUpgradeName = messageManager.getMessage("upgrade-types." + upgradeName);
+            // 如果消息配置中没有定义，则使用枚举名称
+            if (localizedUpgradeName.startsWith("&c未找到消息:")) {
+                localizedUpgradeName = upgradeName;
+            }
+            
+            player.sendMessage("  " + localizedUpgradeName + ": " + level);
         }
+        
+        player.sendMessage("-------------------------");
     }
     
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        List<String> completions = new ArrayList<>();
-        
         if (args.length == 1) {
-            // 补全子命令
-            String subCommand = args[0].toLowerCase();
-            if ("create".startsWith(subCommand)) {
-                completions.add("create");
-            }
-            if ("upgrade".startsWith(subCommand)) {
-                completions.add("upgrade");
-            }
-            if ("info".startsWith(subCommand)) {
-                completions.add("info");
-            }
-            if ("help".startsWith(subCommand)) {
-                completions.add("help");
-            }
+            List<String> completions = new ArrayList<>();
+            String lowerCaseArg = args[0].toLowerCase();
+            
+            completions.add("create");
+            completions.add("info");
+            completions.add("upgrade");
+            completions.add("help");
+            
+            return completions.stream()
+                .filter(s -> s.toLowerCase().startsWith(lowerCaseArg))
+                .toList();
         } else if (args.length == 2 && args[0].equalsIgnoreCase("upgrade")) {
-            // 补全升级类型
-            String upgradeType = args[1].toLowerCase();
-            for (UpgradeType type : UpgradeType.values()) {
-                if (type.name().toLowerCase().startsWith(upgradeType)) {
-                    completions.add(type.name().toLowerCase());
-                }
+            // 为升级命令提供等级补全
+            List<String> levelCompletions = new ArrayList<>();
+            for (int i = 1; i <= 10; i++) {  // 假设最大等级为10
+                levelCompletions.add(String.valueOf(i));
             }
+            return levelCompletions;
         }
         
-        return completions;
+        return Collections.emptyList();
     }
     
-    /**
-     * 发送村庄命令帮助信息
-     * @param player 玩家
-     */
-    private void sendHelpMessage(Player player) {
+    private void sendHelpMessage(Player player, int page) {
+        MessageManager messageManager = plugin.getMessageManager();
+        if (messageManager == null) {
+            player.sendMessage(org.bukkit.ChatColor.RED + "无法显示帮助信息: 消息管理器未初始化");
+            return;
+        }
+        
         player.sendMessage(messageManager.getMessage("help.title"));
-        player.sendMessage(messageManager.getMessage("help.page", Map.of("current", "1", "total", "2")));
-        
-        // 发送村庄相关命令
-        player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
-            "command", "village create",
-            "args", "",
-            "description", "创建一个新的村庄")));
-        player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
-            "command", "village upgrade",
-            "args", "<类型>",
-            "description", "升级村庄指定类型")));
-        player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
-            "command", "village info",
-            "args", "",
-            "description", "显示村庄详细信息")));
-        
-        // 发送分页信息
-        player.sendMessage(messageManager.getMessage("help.page", Map.of("current", "1", "total", "2")));
+        player.sendMessage(messageManager.getMessage("help.page", Map.of("current", "1", "total", "1")));
+        player.sendMessage(messageManager.getMessage("help.command-format", Map.of("command", "create", "args", "", "description", "创建一个新的村庄")));
+        player.sendMessage(messageManager.getMessage("help.command-format", Map.of("command", "info", "args", "", "description", "查看你的村庄信息")));
+        player.sendMessage(messageManager.getMessage("help.command-format", Map.of("command", "help", "args", "[页码]", "description", "显示帮助信息")));
+    }
+    
+    // 添加新的sendHelpMessage方法以支持无页码参数的调用
+    private void sendHelpMessage(Player player) {
+        sendHelpMessage(player, 1);
     }
 }

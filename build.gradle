@@ -3,7 +3,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 group = 'cn.popcraft'
-version = '1.1.10-SNAPSHOT'
+version = '1.1.14-SNAPSHOT'
 description = 'Spigot Plugin'
 
 repositories {
@@ -27,6 +27,13 @@ dependencies {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+// 配置资源过滤
+processResources {
+    filesMatching('**/plugin.yml') {
+        expand(project.properties)
     }
 }
 

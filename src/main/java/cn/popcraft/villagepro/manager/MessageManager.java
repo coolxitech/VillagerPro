@@ -127,8 +127,12 @@ public class MessageManager {
         // 招募相关消息
         messages.put("recruit.success", "&a成功招募了一名村民!");
         messages.put("recruit.failed", "&c招募失败，请确保你有足够的资源!");
+        messages.put("recruit.not-enough-money", "&c招募失败，请确保你有足够的钱!");
+        messages.put("recruit.not-enough-items", "&c招募失败，请确保你有足够的物品!");
         messages.put("recruit.max-villagers-reached", "&c你已达到最大村民数量限制!");
-        
+        messages.put("recruit.no-villager", "&c附近没有可招募的村民!");
+        messages.put("recruit.failed.not-enough-money", "&c招募失败，请确保你有足够的钱!");
+
         // 配置相关消息
         messages.put("config.invalid-upgrade-type", "未知的升级类型: {type}");
         messages.put("config.invalid-upgrade-level", "无效的升级等级: {level}");

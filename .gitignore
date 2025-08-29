@@ -1,8 +1,12 @@
 /build
 /work.md
 /.vscode
-/.log
+/*.log
 /.mdmp
 /API_MIGRATION_REPORT.md
 /.gradle
 /src/main/java/cn/popcraft/villagepro/manager/CropManager.java.txt
+/*.class
+/fix.md
+/newfix.md
+/fix.md

@@ -47,34 +47,53 @@ public class VillagerCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(messageManager.getMessage("help.player-only"));
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("该命令只能由玩家执行。");
             return true;
         }
-        
-        Player player = (Player) sender;
-        
-        // 无参数或无效参数，显示帮助信息
-        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
-            sendHelpMessage(player, args);
+
+        if (args.length == 0) {
+            // 显示帮助信息
+            player.sendMessage(messageManager.getMessage("commands.villager.usage"));
             return true;
         }
-        
-        // 查找并执行子命令
-        for (SubCommand subCommand : subCommands) {
-            if (args[0].equalsIgnoreCase(subCommand.getName())) {
-                if (player.hasPermission("villagerpro." + subCommand.getName()) || player.hasPermission("villagerpro.admin")) {
-                    subCommand.execute(player, args);
-                    return true;
-                } else {
-                    player.sendMessage(messageManager.getMessage("no-permission"));
+
+        switch (args[0].toLowerCase()) {
+            case "production":
+                plugin.getProductionGUI().openMainMenu(player);
+                break;
+            case "upgrade":
+                if (args.length < 2) {
+                    player.sendMessage(messageManager.getMessage("commands.villager.usage"));
                     return true;
                 }
-            }
+                try {
+                    UpgradeType type = UpgradeType.valueOf(args[1].toUpperCase());
+                    plugin.getVillageManager().upgradeVillage(player, type);
+                } catch (IllegalArgumentException e) {
+                    player.sendMessage(messageManager.getMessage("upgrade.failed"));
+                }
+                break;
+            case "follow":
+                plugin.getFollowManager().toggleFollowMode(player);
+                break;
+            case "info":
+                // TODO: 显示村民信息
+                player.sendMessage("此功能正在开发中...");
+                break;
+            case "list":
+                // TODO: 列出所有村民
+                player.sendMessage("此功能正在开发中...");
+                break;
+            case "remove":
+                // TODO: 移除村民
+                player.sendMessage("此功能正在开发中...");
+                break;
+            default:
+                player.sendMessage(messageManager.getMessage("commands.villager.usage"));
+                break;
         }
-        
-        // 未知命令
-        player.sendMessage(messageManager.getMessage("help.invalid-usage"));
+
         return true;
     }
     
@@ -185,7 +204,7 @@ public class VillagerCommand implements CommandExecutor {
         
         @Override
         public String getUsage() {
-            return "<type> <level>";
+            return "<type>";
         }
         
         @Override
@@ -195,10 +214,10 @@ public class VillagerCommand implements CommandExecutor {
         
         @Override
         public void execute(Player player, String[] args) {
-            if (args.length < 3) {
+            if (args.length < 2) {
                 player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
                     "command", "villager upgrade",
-                    "args", "<type> <level>",
+                    "args", "<type>",
                     "description", "升级村民能力"
                 )));
                 return;
@@ -206,8 +225,7 @@ public class VillagerCommand implements CommandExecutor {
             
             try {
                 UpgradeType type = UpgradeType.valueOf(args[1].toUpperCase());
-                int level = Integer.parseInt(args[2]);
-                plugin.getVillageManager().upgradeVillage(player, type, level);
+                plugin.getVillageManager().upgradeVillage(player, type);
             } catch (IllegalArgumentException e) {
                 player.sendMessage(messageManager.getMessage("upgrade.failed"));
             }

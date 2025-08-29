@@ -17,6 +17,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class TaskGUI implements Listener {
     private final VillagePro plugin;
@@ -33,6 +34,15 @@ public class TaskGUI implements Listener {
      */
     public void openTaskGUI(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, "任务中心");
+
+        // 添加返回按钮
+        ItemStack backButton = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = backButton.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName(ChatColor.GRAY + "返回");
+            backButton.setItemMeta(backMeta);
+        }
+        gui.setItem(26, backButton); // 放在右下角
 
         // 添加任务生成按钮
         ItemStack generateTask = new ItemStack(Material.BOOK);
@@ -81,7 +91,7 @@ public class TaskGUI implements Listener {
      */
     public void openPlayerTasksGUI(Player player) {
         List<Task> playerTasks = taskManager.getPlayerActiveTasks(player.getUniqueId());
-        
+
         int size = Math.max(9, ((playerTasks.size() + 8) / 9) * 9); // 计算需要的行数
         Inventory gui = Bukkit.createInventory(null, size, "我的任务");
 
@@ -90,6 +100,15 @@ public class TaskGUI implements Listener {
             ItemStack taskItem = createTaskItem(task);
             gui.setItem(i, taskItem);
         }
+
+        // 添加返回按钮
+        ItemStack backButton = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = backButton.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName(ChatColor.GRAY + "返回");
+            backButton.setItemMeta(backMeta);
+        }
+        gui.setItem(size - 1, backButton); // 放在末尾
 
         player.openInventory(gui);
     }
@@ -156,12 +175,13 @@ public class TaskGUI implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         String title = event.getView().getTitle();
-        
+
         if (!title.equals("任务中心") && !title.equals("我的任务")) {
             return;
         }
 
-        event.setCancelled(true);
+        event.setCancelled(true); // 防止玩家拿走物品
+
         Player player = (Player) event.getWhoClicked();
         ItemStack clickedItem = event.getCurrentItem();
 
@@ -205,6 +225,17 @@ public class TaskGUI implements Listener {
      * 处理玩家任务点击事件
      */
     private void handlePlayerTasksClick(Player player, ItemStack clickedItem) {
+        ItemMeta meta = clickedItem.getItemMeta();
+        if (meta == null) return;
+
+        String displayName = ChatColor.stripColor(meta.getDisplayName());
+
+        if (displayName.equals("返回")) {
+            player.closeInventory();
+            openTaskGUI(player); // 返回任务中心
+            return;
+        }
+
         // 这里可以添加任务详情查看或完成任务的逻辑
         player.sendMessage(ChatColor.GRAY + "点击查看任务详情...");
     }
@@ -214,7 +245,7 @@ public class TaskGUI implements Listener {
      */
     private void generateRandomTask(Player player) {
         // 检查经济系统
-        if (plugin.getEconomy() == null) {
+        if (!plugin.getEconomyManager().isAvailable()) {
             player.sendMessage(ChatColor.RED + "经济系统不可用！");
             return;
         }
@@ -222,22 +253,22 @@ public class TaskGUI implements Listener {
         double cost = 100.0;
         
         // 检查玩家余额
-        if (!plugin.getEconomy().has(player, cost)) {
-            player.sendMessage(ChatColor.RED + "余额不足！需要: " + plugin.getEconomy().format(cost));
+        if (!plugin.getEconomyManager().has(player, cost)) {
+            player.sendMessage(ChatColor.RED + "余额不足！需要: " + plugin.getEconomyManager().format(cost));
             return;
         }
 
         // 扣除费用
-        if (plugin.getEconomy().withdrawPlayer(player, cost).transactionSuccess()) {
+        if (plugin.getEconomyManager().withdraw(player, cost)) {
             // 生成随机任务
             Task newTask = taskManager.generateRandomTask(player);
             if (newTask != null) {
                 player.sendMessage(ChatColor.GREEN + "成功生成新任务: " + newTask.getType().toString());
-                player.sendMessage(ChatColor.GRAY + "花费: " + plugin.getEconomy().format(cost));
+                player.sendMessage(ChatColor.GRAY + "花费: " + plugin.getEconomyManager().format(cost));
                 player.closeInventory();
             } else {
                 // 如果任务生成失败，退还费用
-                plugin.getEconomy().depositPlayer(player, cost);
+                plugin.getEconomyManager().deposit(player, cost);
                 player.sendMessage(ChatColor.RED + "任务生成失败！");
             }
         } else {

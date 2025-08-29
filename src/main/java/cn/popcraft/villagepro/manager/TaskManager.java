@@ -289,9 +289,13 @@ public class TaskManager {
         
         Task task = taskData.getCurrentTask();
         
-        // 发放经验或金币奖励
-        player.giveExp(task.getRewardExp());
-        plugin.getEconomy().depositPlayer(player, task.getRewardMoney());
+        if (task.getRewardMoney() > 0) {
+            plugin.getEconomyManager().deposit(player, task.getRewardMoney());
+        }
+            
+        if (task.getRewardExp() > 0) {
+            player.giveExp(task.getRewardExp());
+        }
         
         // 清除当前任务
         taskData.setCurrentTask(null);

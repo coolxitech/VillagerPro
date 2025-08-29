@@ -22,6 +22,16 @@ public class FollowManager {
     }
     
     /**
+     * 切换村民的跟随模式
+     * @param player 玩家
+     */
+    public void toggleFollowMode(Player player) {
+        // 这里应该实现切换跟随模式的逻辑
+        // 例如：在自由活动、跟随玩家、停留原地三种模式之间切换
+        player.sendMessage("跟随模式切换功能正在开发中...");
+    }
+    
+    /**
      * 设置村民的跟随模式
      * @param villager 村民实体
      * @param mode 跟随模式

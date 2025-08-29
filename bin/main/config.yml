@@ -165,7 +165,7 @@ upgrades:
         EMERALD: 40
         CLOCK: 5
         DIAMOND: 2
-  CROP_GROWTH:
+  CROP_YIELD:
     1:
       cost-money: 1000
       cost-diamonds: 0
@@ -235,6 +235,78 @@ upgrades:
         EMERALD: 60
         CHEST: 5
         DIAMOND: 2
+  TRADE_QUALITY:
+    1:
+      cost-money: 1000
+      cost-diamonds: 0
+      cost-items:
+        EMERALD: 15
+        LAPIS_LAZULI: 10
+    2:
+      cost-money: 2000
+      cost-diamonds: 0
+      cost-items:
+        EMERALD: 30
+        LAPIS_LAZULI: 20
+        GOLD_INGOT: 5
+    3:
+      cost-money: 3000
+      cost-diamonds: 1
+      cost-items:
+        EMERALD: 45
+        LAPIS_LAZULI: 30
+        GOLD_INGOT: 10
+    4:
+      cost-money: 4000
+      cost-diamonds: 2
+      cost-items:
+        EMERALD: 60
+        LAPIS_LAZULI: 40
+        GOLD_INGOT: 15
+        DIAMOND: 1
+    5:
+      cost-money: 5000
+      cost-diamonds: 3
+      cost-items:
+        EMERALD: 75
+        LAPIS_LAZULI: 50
+        GOLD_INGOT: 20
+        DIAMOND: 2
+  TRADE_PRICE:
+    1:
+      cost-money: 1000
+      cost-diamonds: 0
+      cost-items:
+        EMERALD: 10
+        GOLD_INGOT: 5
+    2:
+      cost-money: 2000
+      cost-diamonds: 0
+      cost-items:
+        EMERALD: 20
+        GOLD_INGOT: 10
+        DIAMOND: 1
+    3:
+      cost-money: 3000
+      cost-diamonds: 1
+      cost-items:
+        EMERALD: 30
+        GOLD_INGOT: 15
+        DIAMOND: 2
+    4:
+      cost-money: 4000
+      cost-diamonds: 2
+      cost-items:
+        EMERALD: 40
+        GOLD_INGOT: 20
+        DIAMOND: 3
+    5:
+      cost-money: 5000
+      cost-diamonds: 3
+      cost-items:
+        EMERALD: 50
+        GOLD_INGOT: 25
+        DIAMOND: 4
 
 # 村民招募配置
 recruit:
@@ -244,6 +316,35 @@ recruit:
     EMERALD: 10
     GOLDEN_APPLE: 2
     IRON_INGOT: 5
+
+# 任务配置
+tasks:
+  types:
+    - COLLECT_WHEAT
+    - KILL_ZOMBIE
+    - DELIVER_POTION
+    - MINE_IRON
+    - MINE_DIAMOND
+    - BAKE_BREAD
+    - KILL_SKELETON
+    - KILL_CREEPER
+    - REACH_LEVEL
+    - FISH_ITEM
+    - CRAFT_ITEM
+    - ENCHANT_ITEM
+    - BREED_ANIMAL
+    - HARVEST_CROP
+    - EXPLORE_BIOME
+    - TRADE_WITH_VILLAGER
+    - COLLECT_WOOD
+    - MINE_STONE
+    - KILL_SPIDER
+    - KILL_ENDERMAN
+    - COLLECT_FLOWER
+    - SHEAR_SHEEP
+    - MILK_COW
+    - TAME_ANIMAL
+    - BREW_POTION
 
 # 消息配置
 messages:
@@ -259,3 +360,8 @@ messages:
   crop-withdraw-success: "&a成功取出 {amount} 个 {crop}!"
   crop-withdraw-failed: "&c取出失败，请确保你有足够的 {crop}!"
   crop-storage-empty: "&c你的作物存储是空的!"
+  gui:
+    production-title: "&6村民产出"
+    profession-production-title: "&6{profession}产出"
+    click-to-interact: "&e点击交互"
+    back: "&c返回"

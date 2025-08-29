@@ -12,6 +12,7 @@ import cn.popcraft.villagepro.util.VillagerUtils;
 import com.google.gson.Gson;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.entity.Villager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -34,7 +35,8 @@ public final class VillagePro extends JavaPlugin {
     private TaskManager taskManager;
     private VillagerSkillManager villagerSkillManager;
     private FollowManager followManager;
-    
+    private EconomyManager economyManager;
+
     // GUIs
     private ProductionGUI productionGUI;
     private UpgradeGUI upgradeGUI;
@@ -55,24 +57,25 @@ public final class VillagePro extends JavaPlugin {
     public void onEnable() {
         instance = this;
         
-        // 初始化消息管理器（需要在ConfigManager之前初始化）
-        this.messageManager = new MessageManager(this);
+        // 保存默认配置文件
+        saveDefaultConfig();
+        
+        // 初始化存储
+        sqliteStorage = new SQLiteStorage(this, gson);
         
         // 初始化配置管理器
         this.configManager = new ConfigManager(this);
         
-        // 初始化数据库存储
-        this.sqliteStorage = new SQLiteStorage(this, gson);
+        // 初始化消息管理器
+        this.messageManager = new MessageManager(this);
         
-        // 初始化经济系统
-        setupEconomy();
-        
-        // 初始化管理器
+        // 初始化其他管理器
         this.villageManager = new VillageManager(this);
         this.cropManager = new CropManager(this);
         this.taskManager = new TaskManager(this);
         this.villagerSkillManager = new VillagerSkillManager(this);
         this.followManager = new FollowManager(this);
+        this.economyManager = new EconomyManager(this);
         
         // 加载所有村庄数据
         this.villageManager.loadAll();
@@ -89,11 +92,11 @@ public final class VillagePro extends JavaPlugin {
         this.taskGUI = new TaskGUI(this, taskManager);
         
         // 注册命令
-        this.getCommand("villager").setExecutor(new VillagerCommand(this));
-        this.getCommand("village").setExecutor(new VillageCommand(this));
-        this.getCommand("crop").setExecutor(new CropCommand(this));
-        this.getCommand("recruit").setExecutor(new RecruitCommand(this));
-        this.getCommand("upgrade").setExecutor(new UpgradeCommand(this));
+        registerCommandIfPresent("villager", new VillagerCommand(this));
+        registerCommandIfPresent("village", new VillageCommand(this));
+        registerCommandIfPresent("crop", new CropCommand(this));
+        registerCommandIfPresent("recruit", new RecruitCommand(this));
+        registerCommandIfPresent("upgrade", new UpgradeCommand(this));
         
         // 注册事件监听器
         Bukkit.getPluginManager().registerEvents(new VillagerListener(this), this);
@@ -111,22 +114,26 @@ public final class VillagePro extends JavaPlugin {
     
     @Override
     public void onDisable() {
-        // 保存所有村庄数据
-        getVillageManager().saveAllVillages();
-        
-        // 保存所有任务数据
-        getTaskManager().saveAll();
-        
-        // 保存所有作物数据
-        getCropManager().saveAll();
-        
         // 清理村民实体
         for (VillagerEntity villagerEntity : villagerEntities.values()) {
             Villager villager = villagerEntity.getBukkitEntity();
-            if (villager != null && villager.isValid()) {
-                // 移除所有者标记，但保留村民实体
+            if (villager != null) {
+                // 清除自定义名称和所有者信息
+                villager.setCustomName(null);
+                villager.setCustomNameVisible(false);
                 VillagerUtils.setOwner(villager, null);
             }
+        }
+        
+        // 保存所有数据
+        if (villageManager != null) {
+            villageManager.saveAll();
+        }
+        if (taskManager != null) {
+            taskManager.saveAll();
+        }
+        if (cropManager != null) {
+            cropManager.saveAll();
         }
         
         getLogger().info("VillagePro 已禁用!");
@@ -149,13 +156,9 @@ public final class VillagePro extends JavaPlugin {
     public VillageManager getVillageManager() {
         return villageManager;
     }
-    
-    public CropManager getCropManager() {
-        return cropManager;
-    }
-    
-    public TaskManager getTaskManager() {
-        return taskManager;
+
+    public EconomyManager getEconomyManager() {
+        return economyManager;
     }
     
     public VillagerSkillManager getVillagerSkillManager() {
@@ -164,6 +167,14 @@ public final class VillagePro extends JavaPlugin {
     
     public FollowManager getFollowManager() {
         return followManager;
+    }
+    
+    public TaskManager getTaskManager() {
+        return taskManager;
+    }
+    
+    public CropManager getCropManager() {
+        return cropManager;
     }
     
     // 获取GUI
@@ -199,29 +210,6 @@ public final class VillagePro extends JavaPlugin {
         return random;
     }
     
-    // 经济系统相关方法
-    private boolean setupEconomy() {
-        if (Bukkit.getPluginManager().getPlugin("Vault") == null) {
-            getLogger().warning("未找到 Vault 插件，经济系统将不可用");
-            return false;
-        }
-        
-        RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
-        if (rsp == null) {
-            getLogger().warning("未找到经济系统提供商，经济系统将不可用");
-            return false;
-        }
-        
-        economy = rsp.getProvider();
-        getLogger().info("经济系统已启用: " + economy.getName());
-        return true;
-    }
-    
-    @Nullable
-    public Economy getEconomy() {
-        return economy;
-    }
-    
     // 启动村民跟随任务
     private void startVillagerFollowTask() {
         Bukkit.getScheduler().runTaskTimer(this, () -> {
@@ -248,5 +236,18 @@ public final class VillagePro extends JavaPlugin {
             
             getLogger().info("自动保存所有数据完成");
         }, 6000L, 6000L); // 每5分钟保存一次 (6000 ticks = 5 minutes)
+    }
+
+    /**
+     * 注册命令，如果命令在plugin.yml中定义
+     * @param commandName 命令名称
+     * @param executor 命令执行器
+     */
+    private void registerCommandIfPresent(String commandName, CommandExecutor executor) {
+        try {
+            this.getCommand(commandName).setExecutor(executor);
+        } catch (Exception e) {
+            this.getLogger().severe("无法注册命令 /" + commandName + ": 该命令未在plugin.yml中定义");
+        }
     }
 }

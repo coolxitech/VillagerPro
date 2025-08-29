@@ -1,48 +1,174 @@
 # VillagePro 消息配置文件
 
+# 前缀
 prefix: "&a[VillagePro] &r"
+
+# 权限消息
 no-permission: "&c你没有权限执行此命令!"
+
+# 帮助消息
+help:
+  command-format: "&a/villagerpro {command} {args} &7- &f{description}"
+  player-only: "&c该命令只能由玩家执行!"
+  invalid-usage: "&c无效的命令用法! 请使用 &a/villagerpro help &c查看帮助"
+  page-info: "&7使用 &e{command} &7查看其他页面"
+  page-not-found: "&c第 {page} 页不存在，总共有 {total} 页"
 
 # 村民相关消息
 villager:
   name: "&a{player}的村民"
+  recruited: "&a成功招募了村民!"
+  not-found: "&c附近没有可招募的村民!"
+  already-recruited: "&c该村民已被招募!"
+  max-villagers-reached: "&c你已达到最大村民数量限制!"
+  max-reached: "&c你已达到最大村民数量限制!"
+  
+# 村庄相关消息
+village:
+  created: "&a村庄创建成功!"
+  upgraded: "&a村庄升级成功! 当前等级: &e{level}"
+  max-level: "&c村庄已达到最高等级!"
+  not-found: "&c你还没有村庄，请先创建一个!"
+  info:
+    title: "&6村庄信息"
+    owner: "&e所有者: &a{owner}"
+    villagers: "&e村民数量: &a{count}"
+    level: "&e当前等级: &a{level}"
+    upgrades: "&e升级信息:"
+    upgrade-item: "&7- &e{type}: &a{level} 级"
 
-# 配置相关消息
-config:
-  invalid-upgrade-type: "未知的升级类型: {type}"
-  invalid-upgrade-level: "无效的升级等级: {level}"
+# 升级相关消息
+upgrade:
+  trade:
+    description: "提高村民交易数量和质量"
+  health:
+    description: "提高村民生命值和治疗能力"
+  speed:
+    description: "提高村民移动速度"
+  protection:
+    description: "提高村民防护能力"
+  restock-speed:
+    description: "提高村民补货速度"
+  crop-yield:
+    description: "提高农民作物产量"
+  trade-amount:
+    description: "提高村民交易数量"
+  trade-quality:
+    description: "提高村民交易物品质量"
+  trade-price:
+    description: "提高村民交易价格"
+  success: "&a成功升级了村民的 {type} 能力到 {level} 级!"
+  failed: "&c升级失败，请确保你有足够的资源!"
+  max-level-reached: "&c该能力已达到最高等级!"
 
+# 指令相关消息
+commands:
+  villagepro:
+    description: "显示插件信息和基本用法"
+    usage: "&e使用: &a/villagerpro help [页码]"
+  
+  villager:
+    description: "管理村民的主命令"
+    usage: "&e使用: &a/villager [subcommand] [args]"
+    subcommands:
+      production: "打开村民产出界面"
+      upgrade: "升级村民能力"
+      follow: "切换村民跟随模式"
+      info: "显示村民详细信息"
+      list: "列出所有村民"
+      remove: "移除村民"
+      
+  village:
+    description: "管理村庄的主命令"
+    usage: "&e使用: &a/village [subcommand] [args]"
+    subcommands:
+      create: "创建新村庄"
+      upgrade: "升级村庄"
+      info: "显示村庄信息"
+      
+  recruit:
+    description: "招募新村民"
+    usage: "&e使用: &a/recruit [职业]"
+    
+  crop:
+    description: "管理作物存储和产出"
+    usage: "&e使用: &a/crop [subcommand] [args]"
+    subcommands:
+      withdraw: "取出作物"
+      deposit: "存储作物"
+      balance: "查看作物余额"
+      
+# 村民相关消息
+follow:
+  start: "&a村民开始跟随你"
+  stop: "&a村民停止跟随"
+  stay: "&a村民将停留在此处"
+  free: "&a村民将自由活动"
+  request: "&a发送 y 让村民跟随，n 取消跟随"
+  cancel: "&a村民将不会跟随你"
+  
 # GUI相关消息
 gui:
   upgrade-title: "&6村民升级"
-  confirm-prefix: "&6确认升级"
-  confirm-title: "&6确认升级 &e{type}"
+  production-title: "&6村民产出"
+  profession-production-title: "&6{profession}产出"
+  confirm-title: "&6确认升级 - {type}"
   upgrade-info: "&e升级信息"
   current-level: "&7当前等级: &e{level}"
   target-level: "&7目标等级: &e{level}"
   cost: "&7升级费用:"
-  cost-money: "&7- &e{amount} &7金币"
-  cost-diamond: "&7- &e{amount} &7钻石"
-  cost-item: "&7- &e{amount} &7个 &e{item}"
-  confirm: "&a确认"
-  cancel: "&c取消"
-  close: "&c关闭"
-  level-display: "&7等级: &e{level}&7/&e{max}"
-  click-to-upgrade: "&a点击升级"
+  cost-money: "&f- 金币: &e{amount}"
+  cost-diamond: "&f- 钻石: &e{amount}"
+  cost-item: "&f- {item}: &e{amount}"
+  confirm: "&a&l确认升级"
+  cancel: "&c&l取消"
+  close: "&c&l关闭"
+  back: "&c返回"
+  click-to-upgrade: "&e点击升级"
+  click-to-interact: "&e点击交互"
+  page-info: "&7使用 &e{command} &7查看其他页面"
+  
+# 作物相关消息
+crop:
+  collected: "&a村民收集了 {amount} 个 {crop}!"
+  withdraw-success: "&a成功取出 {amount} 个 {crop}!"
+  withdraw-failed: "&c取出失败，请确保你有足够的 {crop}!"
+  storage-empty: "&c你的作物存储是空的!"
+  balance: "&a你当前存储的 {crop}: &e{amount} 个"
+  deposit-success: "&a成功存储了 {amount} 个 {crop}!"
+  deposit-failed: "&c存储失败，请确保你有足够的 {crop}!"
 
-# 村民招募相关消息
+# 任务相关消息
+task:
+  generated: "&a已生成新的任务: &e{description}"
+  progress: "&a任务进度: &e{progress}/{target} {task}"
+  completed: "&a任务完成! 获得奖励: &e{reward}"
+  reward: "&a任务奖励: &e{exp} 经验 &7| &e{money} 金币"
+  pending: "&e你有未完成的任务，请先完成它们!"
+  no-tasks: "&c没有可用的任务!"
+
+# 招募相关消息
 recruit:
   success: "&a成功招募了一名村民!"
   failed: "&c招募失败，请确保你有足够的资源!"
+  not-enough-money: "&c招募失败，请确保你有足够的钱!"
+  not-enough-items: "&c招募失败，请确保你有足够的物品!"
   max-villagers-reached: "&c你已达到最大村民数量限制!"
+  no-villager: "&c附近没有可招募的村民!"
+  failed-not-enough-money: "&c招募失败，请确保你有足够的钱!"
 
-# 村民升级相关消息
-upgrade:
-  success: "&a成功升级了村民的 {type} 能力到 {level} 级!"
-  failed: "&c升级失败，请确保你有足够的资源!"
-  max-level-reached: "&c该能力已达到最高等级!"
+# 配置相关消息
+config:
+  invalid-upgrade-type: "&c未知的升级类型: {type}"
+  invalid-upgrade-level: "&c无效的升级等级: {level}"
+  village-created: "&a村庄创建成功!"
+  village-upgraded: "&a村庄升级成功! 当前等级: &e{level}"
+  village-max-level: "&c村庄已达到最高等级!"
+  villager-recruited: "&a成功招募村民!"
+  villager-max-reached: "&c你已达到最大村民数量限制!"
+  no-village: "&c你还没有村庄!"
   
-# 村民跟随相关消息
+# 添加跟随相关消息
 follow:
   start: "&a村民开始跟随你"
   stop: "&a村民停止跟随"
@@ -51,39 +177,77 @@ follow:
   request: "&a发送 y 让村民跟随，n 取消跟随"
   cancel: "&a村民将不会跟随你"
 
-# 作物相关消息
+# 添加缺失的命令帮助信息
+help:
+  command-format: "&a/villagerpro {command} {args} &7- &f{description}"
+  player-only: "&c该命令只能由玩家执行!"
+  invalid-usage: "&c无效的命令用法! 请使用 &a/villagerpro help &c查看帮助"
+  page-info: "&7使用 &e{command} &7查看其他页面"
+  page-not-found: "&c第 {page} 页不存在，总共有 {total} 页"
+
+# 添加缺失的村庄信息消息
+village:
+  info:
+    title: "&6村庄信息"
+    owner: "&e所有者: &a{owner}"
+    villagers: "&e村民数量: &a{count}"
+    level: "&e当前等级: &a{level}"
+    upgrades: "&e升级信息:"
+    upgrade-item: "&7- &e{type}: &a{level} 级"
+
+# 添加缺失的错误消息
+errors:
+  invalid-upgrade-type: "&c未知的升级类型: {type}"
+  invalid-upgrade-level: "&c无效的升级等级: {level}"
+  message-not-found: "&c未找到消息: {key}"
+  invalid-subcommand: "&c未知的子命令: {command}"
+
+# 添加村庄相关消息
+village:
+  created: "&a村庄创建成功!"
+  upgraded: "&a村庄升级成功! 当前等级: &e{level}"
+  max-level: "&c村庄已达到最高等级!"
+  not-found: "&c你还没有村庄，请先创建一个!"
+  info:
+    title: "&6村庄信息"
+    owner: "&e所有者: &a{owner}"
+    villagers: "&e村民数量: &a{count}"
+    level: "&e当前等级: &a{level}"
+    upgrades: "&e升级信息:"
+    upgrade-item: "&7- &e{type}: &a{level} 级"
+
+# 添加缺失的命令执行成功/失败消息
+command-results:
+  success: "&a命令执行成功!"
+  failure: "&c命令执行失败!"
+  no-such-command: "&c未知的子命令: {command}"
+
+# 添加缺失的权限不足消息
+permissions:
+  no-permission: "&c你没有权限执行此命令!"
+  required-permission: "&c需要权限节点: {permission}"
+
+# 添加缺失的作物相关消息
 crop:
-  collected: "&a你的村民收集了 {amount} 个 {crop}!"
+  collected: "&a村民收集了 {amount} 个 {crop}!"
   withdraw-success: "&a成功取出 {amount} 个 {crop}!"
   withdraw-failed: "&c取出失败，请确保你有足够的 {crop}!"
   storage-empty: "&c你的作物存储是空的!"
-  invalid-crop-type: "无效的作物类型: {type}"
+  balance: "&a你当前存储的 {crop}: &e{amount} 个"
+  deposit-success: "&a成功存储了 {amount} 个 {crop}!"
+  deposit-failed: "&c存储失败，请确保你有足够的 {crop}!"
 
-
-
-# 升级描述
-upgrade:
-  trade:
-    description: "提升村民交易效率"
-  health:
-    description: "提升村民生命值"
-  speed:
-    description: "提升村民移动速度"
-  protection:
-    description: "提升村民抗性"
-  restock-speed:
-    description: "提升村民补货速度"
-  crop-growth:
-    description: "提升作物生长速度和收获量"
-  trade-amount:
-    description: "提升村民交易货物数量"
-
-# 升级类型名称
-upgrade-types:
-  TRADE: "交易效率"
-  HEALTH: "生命值"
-  SPEED: "移动速度"
-  PROTECTION: "保护抗性"
-  RESTOCK_SPEED: "补货速度"
-  CROP_GROWTH: "作物生长"
-  TRADE_AMOUNT: "交易数量"
+# 添加缺失的经济相关消息
+economy:
+  not-enough-money: "&c你需要 {amount} 金币才能执行此操作!"
+  not-enough-items: "&c你需要 {amount} 个 {item} 才能执行此操作!"
+  cost: "&a此操作需要花费 {amount} 金币"
+  item-cost: "&a此操作需要花费 {amount} 个 {item}"
+  reward: "&a你获得了 {amount} 金币"
+  item-reward: "&a你获得了 {amount} 个 {item}"
+  balance: "&a你的余额: &e{amount} 金币"
+  no-economy: "&c经济系统未启用!"
+  cmi-fallback: "&e检测到CMI经济系统，正在使用CMI的API获取余额"
+  vault-fallback: "&e使用Vault的API获取余额"
+  cmi-withdraw-failure: "&c使用CMI进行交易失败，将回退到Vault"
+  cmi-deposit-failure: "&c使用CMI进行奖励发放失败，将回退到Vault"

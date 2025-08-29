@@ -1,7 +1,7 @@
 package cn.popcraft.villagepro.model;
 
 
-import cn.popcraft.villagepro.model.VillageUpgrade;
+import cn.popcraft.villagepro.model.UpgradeType;
 import java.util.*;
 
 public class Village {
@@ -12,8 +12,6 @@ public class Village {
     private Map<UpgradeType, Integer> upgradeLevels = new HashMap<>();
 
     private boolean followEnabled = false; // 是否启用跟随
-
-    private VillageUpgrade upgrade = new VillageUpgrade();
 
     public UUID getOwnerUuid() {
         return ownerUuid;
@@ -47,7 +45,11 @@ public class Village {
         this.followEnabled = followEnabled;
     }
 
-    public VillageUpgrade getUpgrade() {
-        return upgrade;
+    public int getUpgradeLevel(UpgradeType type) {
+        return upgradeLevels.getOrDefault(type, 0);
+    }
+
+    public void setUpgradeLevel(UpgradeType type, int level) {
+        upgradeLevels.put(type, level);
     }
 }
