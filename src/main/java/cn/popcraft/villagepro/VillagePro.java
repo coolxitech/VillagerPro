@@ -1,11 +1,9 @@
 package cn.popcraft.villagepro;
 
-import cn.popcraft.villagepro.command.CropCommand;
-import cn.popcraft.villagepro.command.RecruitCommand;
-import cn.popcraft.villagepro.command.UpgradeCommand;
-import cn.popcraft.villagepro.command.VillageCommand;
-import cn.popcraft.villagepro.command.VillagerCommand;
+import cn.popcraft.villagepro.command.*;
 import cn.popcraft.villagepro.gui.ProductionGUI;
+import cn.popcraft.villagepro.gui.TaskGUI;
+import cn.popcraft.villagepro.gui.UpgradeGUI;
 import cn.popcraft.villagepro.listener.*;
 import cn.popcraft.villagepro.manager.*;
 import cn.popcraft.villagepro.model.VillagerEntity;
@@ -13,41 +11,49 @@ import cn.popcraft.villagepro.storage.SQLiteStorage;
 import cn.popcraft.villagepro.util.VillagerUtils;
 import com.google.gson.Gson;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Villager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 
-public class VillagePro extends JavaPlugin {
+public final class VillagePro extends JavaPlugin {
     private static VillagePro instance;
-    private SQLiteStorage database;
-    private VillageManager villageManager;
-    private ConfigManager configManager;
-    private FollowManager followManager;
-    private CropManager cropManager;
+    
+    // Managers
     private MessageManager messageManager;
+    private ConfigManager configManager;
+    private VillageManager villageManager;
+    private CropManager cropManager;
     private TaskManager taskManager;
     private VillagerSkillManager villagerSkillManager;
-    private VillagerListener villagerListener;
-    private Economy economy;
+    private FollowManager followManager;
+    
+    // GUIs
+    private ProductionGUI productionGUI;
+    private UpgradeGUI upgradeGUI;
+    private TaskGUI taskGUI;
+    
+    // Storage
+    private SQLiteStorage sqliteStorage;
+    
+    // Economy
+    private Economy economy = null;
+    
+    // Villager entities map
     private final Map<UUID, VillagerEntity> villagerEntities = new HashMap<>();
-    private final Random random = new Random();
     private final Gson gson = new Gson();
-
+    private final Random random = new Random();
+    
     @Override
     public void onEnable() {
-        // 设置经济系统
-        if (getServer().getPluginManager().getPlugin("Vault") != null) {
-            RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
-            if (rsp != null) {
-                economy = rsp.getProvider();
-            }
-        }
         instance = this;
-        
-        // 保存默认配置
-        saveDefaultConfig();
         
         // 初始化消息管理器（需要在ConfigManager之前初始化）
         this.messageManager = new MessageManager(this);
@@ -55,194 +61,192 @@ public class VillagePro extends JavaPlugin {
         // 初始化配置管理器
         this.configManager = new ConfigManager(this);
         
-        // 初始化数据库
-        this.database = new SQLiteStorage(this, gson);
-        
-        // 初始化村庄管理器
-        this.villageManager = new VillageManager(this);
-        
-        // 初始化任务管理器
-        this.taskManager = new TaskManager(this);
-        
-        // 初始化跟随管理器
-        this.followManager = new FollowManager(this);
-        
-        // 初始化作物管理器
-        this.cropManager = new CropManager(this);
-        
-        // 初始化消息管理器
-        this.messageManager = new MessageManager(this);
-        
-        // 初始化村民技能管理器
-        this.villagerSkillManager = new VillagerSkillManager(this);
+        // 初始化数据库存储
+        this.sqliteStorage = new SQLiteStorage(this, gson);
         
         // 初始化经济系统
         setupEconomy();
         
-        // 初始化村民监听器
-        this.villagerListener = new VillagerListener(this);
+        // 初始化管理器
+        this.villageManager = new VillageManager(this);
+        this.cropManager = new CropManager(this);
+        this.taskManager = new TaskManager(this);
+        this.villagerSkillManager = new VillagerSkillManager(this);
+        this.followManager = new FollowManager(this);
         
-        // 注册事件监听器
-        getServer().getPluginManager().registerEvents(new cn.popcraft.villagepro.listener.VillageProTaskListener(this, this.taskManager), this);
-        getServer().getPluginManager().registerEvents(new SkillListener(this), this);
-        getServer().getPluginManager().registerEvents(villagerListener, this);
-        getServer().getPluginManager().registerEvents(new CropListener(this), this);
-        getServer().getPluginManager().registerEvents(new GUIListener(this), this);
+        // 加载所有村庄数据
+        this.villageManager.loadAll();
+        
+        // 加载所有作物数据
+        this.cropManager.loadAll();
+        
+        // 加载所有任务数据
+        this.taskManager.loadAll();
+        
+        // 初始化GUI（在所有管理器初始化之后）
+        this.productionGUI = new ProductionGUI(this);
+        this.upgradeGUI = new UpgradeGUI(this);
+        this.taskGUI = new TaskGUI(this, taskManager);
         
         // 注册命令
-        VillageCommand villageCommand = new VillageCommand(this);
-        getCommand("village").setExecutor(villageCommand);
-        getCommand("village").setTabCompleter(villageCommand);
-        getCommand("recruit").setExecutor(new RecruitCommand(this));
-        getCommand("upgrade").setExecutor(new UpgradeCommand(this));
-        getCommand("crop").setExecutor(new CropCommand(this));
+        this.getCommand("villager").setExecutor(new VillagerCommand(this));
+        this.getCommand("village").setExecutor(new VillageCommand(this));
+        this.getCommand("crop").setExecutor(new CropCommand(this));
+        this.getCommand("recruit").setExecutor(new RecruitCommand(this));
+        this.getCommand("upgrade").setExecutor(new UpgradeCommand(this));
         
-        // 注册Tab补全
-        VillagerCommand villagerCommand = new VillagerCommand(this);
-        getCommand("villager").setExecutor(villagerCommand);
-        getCommand("villager").setTabCompleter(villagerCommand);
+        // 注册事件监听器
+        Bukkit.getPluginManager().registerEvents(new VillagerListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new CropListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new GUIListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new SkillListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new VillageProTaskListener(this, taskManager), this);
         
-        // 加载在线村民
-        loadOnlineVillagers();
+        // 启动定时任务
+        startVillagerFollowTask();
+        startAutoSaveTask();
         
-        // 启动农民收获任务
-        villagerListener.startFarmerHarvestTask();
-        
-        getLogger().info("VillagePro 插件已启用!");
+        getLogger().info("VillagePro 已启用!");
     }
-
+    
     @Override
     public void onDisable() {
-        // 保存数据
-        if (villageManager != null) {
-            villageManager.saveAll();
+        // 保存所有村庄数据
+        getVillageManager().saveAllVillages();
+        
+        // 保存所有任务数据
+        getTaskManager().saveAll();
+        
+        // 保存所有作物数据
+        getCropManager().saveAll();
+        
+        // 清理村民实体
+        for (VillagerEntity villagerEntity : villagerEntities.values()) {
+            Villager villager = villagerEntity.getBukkitEntity();
+            if (villager != null && villager.isValid()) {
+                // 移除所有者标记，但保留村民实体
+                VillagerUtils.setOwner(villager, null);
+            }
         }
         
-        // 保存作物数据并关闭连接
-        if (cropManager != null) {
-            cropManager.close();
-        }
-        
-        // 关闭数据库连接
-        if (database != null) {
-            database.close();
-        }
-        
-        getLogger().info("VillagePro 插件已禁用!");
+        getLogger().info("VillagePro 已禁用!");
     }
     
-    /**
-     * 设置经济系统
-     */
-    private void setupEconomy() {
-        if (getServer().getPluginManager().getPlugin("Vault") == null) {
-            getLogger().warning("未找到 Vault 插件，经济功能将被禁用!");
-            return;
-        }
-        
-        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
-        if (rsp == null) {
-            getLogger().warning("未找到经济系统，经济功能将被禁用!");
-            return;
-        }
-        
-        economy = rsp.getProvider();
-        getLogger().info("已连接到经济系统: " + economy.getName());
-    }
-    
-    /**
-     * 加载所有在线村民
-     */
-    private void loadOnlineVillagers() {
-        getServer().getWorlds().forEach(world -> 
-            world.getEntitiesByClass(org.bukkit.entity.Villager.class).forEach(villager -> {
-                UUID owner = VillagerUtils.getOwner(villager);
-                if (owner != null) {
-                    VillagerEntity villagerEntity = new VillagerEntity(villager, owner);
-                    villagerEntities.put(villager.getUniqueId(), villagerEntity);
-                    // 应用村民技能
-                    villagerSkillManager.applyVillagerSkills(villager);
-                }
-            })
-        );
-        
-        getLogger().info("已加载 " + villagerEntities.size() + " 个在线村民");
-    }
-
-    @NotNull
+    // 获取插件实例
     public static VillagePro getInstance() {
         return instance;
     }
-
-    @NotNull
-    public Economy getEconomy() {
-        return this.economy;
-    }
     
-    @NotNull
-    public Random getRandom() {
-        return random;
-    }
-    
-    @NotNull
-    public Gson getGson() {
-        return gson;
-    }
-
-    @NotNull
-    public VillageManager getVillageManager() {
-        return villageManager;
-    }
-    
-    @NotNull
-    public ConfigManager getConfigManager() {
-        return configManager;
-    }
-    
-    @NotNull
-    public FollowManager getFollowManager() {
-        return followManager;
-    }
-
-    @NotNull
-    public Map<UUID, VillagerEntity> getVillagerEntities() {
-        return villagerEntities;
-    }
-    
-    @NotNull
-    public CropManager getCropManager() {
-        return cropManager;
-    }
-    
-    @NotNull
+    // 获取管理器
     public MessageManager getMessageManager() {
         return messageManager;
     }
     
-    @NotNull
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+    
+    public VillageManager getVillageManager() {
+        return villageManager;
+    }
+    
+    public CropManager getCropManager() {
+        return cropManager;
+    }
+    
     public TaskManager getTaskManager() {
         return taskManager;
     }
     
-    @NotNull
     public VillagerSkillManager getVillagerSkillManager() {
         return villagerSkillManager;
     }
     
-    @NotNull
-    public SQLiteStorage getDatabase() {
-        return database;
+    public FollowManager getFollowManager() {
+        return followManager;
     }
     
-    private final ProductionGUI productionGUI = new ProductionGUI(this);
-
-    @NotNull
+    // 获取GUI
     public ProductionGUI getProductionGUI() {
         return productionGUI;
     }
     
-    @NotNull
-    public VillagerListener getVillagerListener() {
-        return villagerListener;
+    public UpgradeGUI getUpgradeGUI() {
+        return upgradeGUI;
+    }
+    
+    public TaskGUI getTaskGUI() {
+        return taskGUI;
+    }
+    
+    // 获取存储
+    public SQLiteStorage getDatabase() {
+        return sqliteStorage;
+    }
+    
+    // 获取村民实体映射
+    public Map<UUID, VillagerEntity> getVillagerEntities() {
+        return villagerEntities;
+    }
+    
+    // 获取Gson实例
+    public Gson getGson() {
+        return gson;
+    }
+    
+    // 获取随机数生成器
+    public Random getRandom() {
+        return random;
+    }
+    
+    // 经济系统相关方法
+    private boolean setupEconomy() {
+        if (Bukkit.getPluginManager().getPlugin("Vault") == null) {
+            getLogger().warning("未找到 Vault 插件，经济系统将不可用");
+            return false;
+        }
+        
+        RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+            getLogger().warning("未找到经济系统提供商，经济系统将不可用");
+            return false;
+        }
+        
+        economy = rsp.getProvider();
+        getLogger().info("经济系统已启用: " + economy.getName());
+        return true;
+    }
+    
+    @Nullable
+    public Economy getEconomy() {
+        return economy;
+    }
+    
+    // 启动村民跟随任务
+    private void startVillagerFollowTask() {
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            for (VillagerEntity villagerEntity : villagerEntities.values()) {
+                Villager villager = villagerEntity.getBukkitEntity();
+                if (villager != null && villager.isValid()) {
+                    villagerEntity.updateLocation();
+                }
+            }
+        }, 20L, 20L); // 每秒更新一次
+    }
+    
+    // 启动自动保存任务
+    private void startAutoSaveTask() {
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            // 保存所有村庄数据
+            getVillageManager().saveAll();
+            
+            // 保存所有任务数据
+            getTaskManager().saveAll();
+            
+            // 保存所有作物数据
+            getCropManager().saveAll();
+            
+            getLogger().info("自动保存所有数据完成");
+        }, 6000L, 6000L); // 每5分钟保存一次 (6000 ticks = 5 minutes)
     }
 }

@@ -18,42 +18,40 @@ help:
 
 # 村民相关消息
 villager:
-  not-found: "&c未找到村民!"
+  name: "&a{player}的村民"
+  recruited: "&a成功招募了村民!"
+  not-found: "&c附近没有可招募的村民!"
   already-recruited: "&c该村民已被招募!"
   max-villagers-reached: "&c你已达到最大村民数量限制!"
-  recruited: "&a成功招募村民!"
-  name: "&a{player}的村民"
-
+  max-reached: "&c你已达到最大村民数量限制!"
+  
 # 村庄相关消息
 village:
   created: "&a村庄创建成功!"
-  not-found: "&c你还没有村庄!"
-  upgraded: "&a村庄升级成功!"
-  max-level-reached: "&c村庄已达到最高等级!"
-
+  upgraded: "&a村庄升级成功! 当前等级: &e{level}"
+  max-level: "&c村庄已达到最高等级!"
+  not-found: "&c你还没有村庄，请先创建一个!"
+  
 # 升级相关消息
 upgrade:
-  types:
-    TRADE: "交易能力"
-    HEALTH: "健康能力"
-    SPEED: "速度能力"
-    PROTECTION: "防护能力"
-    RESTOCK_SPEED: "补货速度"
-    CROP_GROWTH: "作物产量"
-    CROP_YIELD: "作物产量"
-    TRADE_AMOUNT: "交易数量"
-    TRADE_QUALITY: "交易质量"
-    TRADE_PRICE: "交易价格"
-  description:
-    TRADE: "提高村民交易能力"
-    HEALTH: "提高村民生命值"
-    SPEED: "提高村民移动速度"
-    PROTECTION: "提高村民防护能力"
-    RESTOCK_SPEED: "提高村民补货速度"
-    CROP_GROWTH: "提高农民作物产量"
-    TRADE_AMOUNT: "提高村民交易数量"
-    TRADE_QUALITY: "提高村民交易物品质量"
-    TRADE_PRICE: "提高村民交易价格"
+  trade:
+    description: "提高村民交易数量和质量"
+  health:
+    description: "提高村民生命值和治疗能力"
+  speed:
+    description: "提高村民移动速度"
+  protection:
+    description: "提高村民防护能力"
+  restock-speed:
+    description: "提高村民补货速度"
+  crop-yield:
+    description: "提高农民作物产量"
+  trade-amount:
+    description: "提高村民交易数量"
+  trade-quality:
+    description: "提高村民交易物品质量"
+  trade-price:
+    description: "提高村民交易价格"
   success: "&a成功升级了村民的 {type} 能力到 {level} 级!"
   failed: "&c升级失败，请确保你有足够的资源!"
   max-level-reached: "&c该能力已达到最高等级!"
@@ -95,7 +93,7 @@ commands:
       deposit: "存储作物"
       balance: "查看作物余额"
       
-# 跟随相关消息
+# 村民相关消息
 follow:
   start: "&a村民开始跟随你"
   stop: "&a村民停止跟随"
@@ -103,18 +101,51 @@ follow:
   free: "&a村民将自由活动"
   request: "&a发送 y 让村民跟随，n 取消跟随"
   cancel: "&a村民将不会跟随你"
-
-# 帮助相关消息
-help:
-  player-only: "&c只有玩家可以使用此命令!"
-  invalid-usage: "&c命令使用错误，请检查用法!"
-  page-info: "&e第 {current} 页，共 {total} 页。使用 {command} 查看其他页面"
-  page-not-found: "&c未找到第 {page} 页，总共 {total} 页"
-  command-format: "&e使用: &a/{command} {args} &7- {description}"
-
-# 权限相关消息
-no-permission: "&c你没有权限执行此命令!"
-
+  
+# GUI相关消息
+gui:
+  upgrade-title: "&6村民升级"
+  production-title: "&6村民产出"
+  profession-production-title: "&6{profession}产出"
+  confirm-title: "&6确认升级 - {type}"
+  upgrade-info: "&e升级信息"
+  current-level: "&7当前等级: &e{level}"
+  target-level: "&7目标等级: &e{level}"
+  cost: "&7升级费用:"
+  cost-money: "&f- 金币: &e{amount}"
+  cost-diamond: "&f- 钻石: &e{amount}"
+  cost-item: "&f- {item}: &e{amount}"
+  confirm: "&a&l确认升级"
+  cancel: "&c&l取消"
+  close: "&c&l关闭"
+  back: "&c返回"
+  click-to-interact: "&e点击交互"
+  page-info: "&7使用 &e{command} &7查看其他页面"
+  
+# 作物相关消息
+crop:
+  collected: "&a村民收集了 {amount} 个 {crop}!"
+  withdraw-success: "&a成功取出 {amount} 个 {crop}!"
+  withdraw-failed: "&c取出失败，请确保你有足够的 {crop}!"
+  storage-empty: "&c你的作物存储是空的!"
+  balance: "&a你当前存储的 {crop}: &e{amount} 个"
+  deposit-success: "&a成功存储了 {amount} 个 {crop}!"
+  deposit-failed: "&c存储失败，请确保你有足够的 {crop}!"
+  
+# 任务相关消息
+task:
+  generated: "&a已生成新的任务: &e{description}"
+  progress: "&a任务进度: &e{progress}/{target} {task}"
+  completed: "&a任务完成! 获得奖励: &e{reward}"
+  reward: "&a任务奖励: &e{exp} 经验 &7| &e{money} 金币"
+  pending: "&e任务系统正在开发中..."
+  
+# 招募相关消息
+recruit:
+  success: "&a成功招募了一名村民!"
+  failed: "&c招募失败，请确保你有足够的资源!"
+  max-villagers-reached: "&c你已达到最大村民数量限制!"
+  
 # 配置相关消息
 config:
   invalid-upgrade-type: "未知的升级类型: {type}"
@@ -132,9 +163,3 @@ upgrade-types:
   TRADE_AMOUNT: "交易数量"
   TRADE_QUALITY: "交易质量"
   TRADE_PRICE: "交易价格"
-  
-# 招募相关消息
-recruit:
-  success: "&a成功招募了一名村民!"
-  failed: "&c招募失败，请确保你有足够的资源!使用 /villager recruit help 查看帮助。"
-  max-villagers-reached: "&c你已达到最大村民数量限制!"

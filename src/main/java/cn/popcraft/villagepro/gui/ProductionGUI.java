@@ -3,19 +3,17 @@ package cn.popcraft.villagepro.gui;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.MessageManager;
 import cn.popcraft.villagepro.model.VillagerProfession;
+import cn.popcraft.villagepro.model.CropStorage;
+import cn.popcraft.villagepro.manager.CropManager;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.UUID;
-import java.util.Random;
+import java.util.*;
 
 /**
  * 村民产出GUI，用于获取村民生产的物品
@@ -35,6 +33,12 @@ public class ProductionGUI {
      * @param player 玩家
      */
     public void openMainMenu(Player player) {
+        // 检查消息管理器是否已正确初始化
+        if (messageManager == null) {
+            player.sendMessage(ChatColor.RED + "插件消息系统未正确初始化，请联系服务器管理员");
+            return;
+        }
+        
         Map<String, String> replacements = new HashMap<>();
         String title = messageManager.getMessage("gui.production-title", replacements);
         Inventory inventory = Bukkit.createInventory(null, 27, title);
@@ -49,11 +53,7 @@ public class ProductionGUI {
         addVillagerProductionButton(inventory, 16, VillagerProfession.CARTOGRAPHER, Material.MAP, "制图师");
         
         // 添加关闭按钮
-        ItemStack closeButton = new ItemStack(Material.BARRIER);
-        ItemMeta closeMeta = closeButton.getItemMeta();
-        closeMeta.setDisplayName(messageManager.getMessage("gui.close", new HashMap<>()));
-        closeButton.setItemMeta(closeMeta);
-        inventory.setItem(22, closeButton);
+        addCloseButton(inventory, 26);
         
         player.openInventory(inventory);
     }
@@ -264,5 +264,16 @@ public class ProductionGUI {
             replacements.put("crop", material.name().toLowerCase());
             player.sendMessage(messageManager.getMessage("crop.withdraw-failed", replacements));
         }
+    }
+    
+    /**
+     * 添加关闭按钮
+     */
+    private void addCloseButton(Inventory inventory, int slot) {
+        ItemStack closeButton = new ItemStack(Material.BARRIER);
+        ItemMeta closeMeta = closeButton.getItemMeta();
+        closeMeta.setDisplayName(messageManager.getMessage("gui.close", new HashMap<>()));
+        closeButton.setItemMeta(closeMeta);
+        inventory.setItem(slot, closeButton);
     }
 }

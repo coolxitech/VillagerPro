@@ -50,6 +50,15 @@ public class GUIListener implements Listener {
             event.setCancelled(true);
             handleProfessionProductionGUI(player, clickedItem, event.getRawSlot(), event.isRightClick());
         }
+        
+        // 阻止玩家从任何自定义GUI中取出物品
+        if (event.getClickedInventory() != player.getInventory() && 
+            (inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.upgrade-title")) ||
+             inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.production-title", java.util.Map.of())) ||
+             inventoryTitle.contains(plugin.getMessageManager().getMessage("gui.profession-production-title", java.util.Map.of("profession", ""))))) {
+            // 完全阻止任何物品移动操作
+            event.setCancelled(true);
+        }
     }
     
     private void handleUpgradeGUI(Player player, ItemStack clickedItem, int slot) {

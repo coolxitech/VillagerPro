@@ -143,4 +143,12 @@ public class CropManager {
         // 在实际实现中，这里应该将作物存储数据保存到数据库
         plugin.getLogger().info("已保存 " + cropStorages.size() + " 个作物存储数据");
     }
+    
+    /**
+     * 加载所有作物数据
+     */
+    public void loadAll() {
+        // 在实际实现中，这里应该从数据库加载作物存储数据
+        plugin.getLogger().info("已加载作物数据");
+    }
 }

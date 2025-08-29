@@ -2,22 +2,23 @@ package cn.popcraft.villagepro.manager;
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.PlayerTaskData;
-import java.util.List;
-import java.util.ArrayList;
 import cn.popcraft.villagepro.model.Task;
 import cn.popcraft.villagepro.storage.SQLiteStorage;
 import org.bukkit.entity.Player;
 import org.bukkit.Material;
 
-
+import java.util.List;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Random;
 
 public class TaskManager {
     private final VillagePro plugin;
     private final SQLiteStorage database;
     private final Map<UUID, PlayerTaskData> taskCache = new HashMap<>();
+    private final Random random = new Random();
 
     public List<Task> getAvailableTasks(UUID playerId) {
         PlayerTaskData playerData = taskCache.get(playerId);
@@ -88,7 +89,7 @@ public class TaskManager {
         Task task = new Task();
         task.setPlayerUuid(player.getUniqueId());
         Task.TaskType[] taskTypes = Task.TaskType.values();
-        Task.TaskType randomType = taskTypes[plugin.getRandom().nextInt(taskTypes.length)];
+        Task.TaskType randomType = taskTypes[random.nextInt(taskTypes.length)];
         task.setType(randomType);
         
         // 根据任务类型设置目标数量
@@ -96,61 +97,61 @@ public class TaskManager {
             case MINE_IRON:
             case MINE_DIAMOND:
             case MINE_STONE:
-                task.setTargetAmount(plugin.getRandom().nextInt(10) + 5); // 5-15 个目标
+                task.setTargetAmount(random.nextInt(10) + 5); // 5-15 个目标
                 break;
             case BAKE_BREAD:
             case CRAFT_ITEM:
-                task.setTargetAmount(plugin.getRandom().nextInt(5) + 3); // 3-8 个目标
+                task.setTargetAmount(random.nextInt(5) + 3); // 3-8 个目标
                 break;
             case KILL_SKELETON:
             case KILL_CREEPER:
             case KILL_ZOMBIE:
             case KILL_SPIDER:
             case KILL_ENDERMAN:
-                task.setTargetAmount(plugin.getRandom().nextInt(8) + 3); // 3-10 个目标
+                task.setTargetAmount(random.nextInt(8) + 3); // 3-10 个目标
                 break;
             case REACH_LEVEL:
-                task.setTargetAmount(plugin.getRandom().nextInt(10) + 5); // 5-15 级
+                task.setTargetAmount(random.nextInt(10) + 5); // 5-15 级
                 break;
             case COLLECT_WHEAT:
             case COLLECT_WOOD:
             case COLLECT_FLOWER:
             case HARVEST_CROP:
-                task.setTargetAmount(plugin.getRandom().nextInt(20) + 10); // 10-30 个目标
+                task.setTargetAmount(random.nextInt(20) + 10); // 10-30 个目标
                 break;
             case FISH_ITEM:
-                task.setTargetAmount(plugin.getRandom().nextInt(5) + 5); // 5-10 个目标
+                task.setTargetAmount(random.nextInt(5) + 5); // 5-10 个目标
                 break;
             case BREED_ANIMAL:
             case SHEAR_SHEEP:
-                task.setTargetAmount(plugin.getRandom().nextInt(5) + 2); // 2-7 个目标
+                task.setTargetAmount(random.nextInt(5) + 2); // 2-7 个目标
                 break;
             case TRADE_WITH_VILLAGER:
-                task.setTargetAmount(plugin.getRandom().nextInt(3) + 2); // 2-5 个目标
+                task.setTargetAmount(random.nextInt(3) + 2); // 2-5 个目标
                 break;
             case ENCHANT_ITEM:
             case BREW_POTION:
-                task.setTargetAmount(plugin.getRandom().nextInt(3) + 1); // 1-4 个目标
+                task.setTargetAmount(random.nextInt(3) + 1); // 1-4 个目标
                 break;
             case TAME_ANIMAL:
-                task.setTargetAmount(plugin.getRandom().nextInt(2) + 1); // 1-3 个目标
+                task.setTargetAmount(random.nextInt(2) + 1); // 1-3 个目标
                 break;
             case MILK_COW:
-                task.setTargetAmount(plugin.getRandom().nextInt(3) + 1); // 1-4 个目标
+                task.setTargetAmount(random.nextInt(3) + 1); // 1-4 个目标
                 break;
             case EXPLORE_BIOME:
                 task.setTargetAmount(1); // 探索1个生物群系
                 break;
             case DELIVER_POTION:
-                task.setTargetAmount(plugin.getRandom().nextInt(3) + 1); // 1-4 个目标
+                task.setTargetAmount(random.nextInt(3) + 1); // 1-4 个目标
                 break;
             default:
-                task.setTargetAmount(plugin.getRandom().nextInt(5) + 1); // 默认 1-5 个目标
+                task.setTargetAmount(random.nextInt(5) + 1); // 默认 1-5 个目标
         }
         
         // 设置奖励
-        task.setRewardExp(plugin.getRandom().nextInt(100) + 50); // 50-150 经验
-        task.setRewardMoney(plugin.getRandom().nextInt(200) + 100); // 100-300 金币
+        task.setRewardExp(random.nextInt(100) + 50); // 50-150 经验
+        task.setRewardMoney(random.nextInt(200) + 100); // 100-300 金币
         
         // 设置任务描述
         switch (randomType) {

@@ -56,6 +56,7 @@ public class MessageManager {
         messages.put("villager.name", "&a{player}的村民");
         messages.put("villager.recruited", "&a成功招募了村民!");
         messages.put("villager.not-found", "&c附近没有可招募的村民!");
+        messages.put("villager.already-recruited", "&c该村民已被招募!");
         messages.put("villager.max-reached", "&c你已达到最大村民数量限制!");
         
         // 村庄相关消息
@@ -84,13 +85,16 @@ public class MessageManager {
         messages.put("task.progress", "&a任务进度: &e{progress}/{target} {task}");
         messages.put("task.completed", "&a任务完成! 获得奖励: &e{reward}");
         messages.put("task.reward", "&a任务奖励: &e{exp} 经验 &7| &e{money} 金币");
-        messages.put("task.pending", "&e任务系统正在开发中...");
+        messages.put("task.pending", "&e你有未完成的任务，请先完成它们!");
         
         // 作物相关消息
         messages.put("crop.collected", "&a村民收集了 {amount} 个 {crop}!");
         messages.put("crop.withdraw-success", "&a成功取出 {amount} 个 {crop}!");
         messages.put("crop.withdraw-failed", "&c取出失败，请确保你有足够的 {crop}!");
         messages.put("crop.storage-empty", "&c你的作物存储是空的!");
+        messages.put("crop.balance", "&a你当前存储的 {crop}: &e{amount} 个");
+        messages.put("crop.deposit-success", "&a成功存储了 {amount} 个 {crop}!");
+        messages.put("crop.deposit-failed", "&c存储失败，请确保你有足够的 {crop}!");
         
         // GUI相关消息
         messages.put("gui.upgrade-title", "&6村民升级");
@@ -110,6 +114,7 @@ public class MessageManager {
         messages.put("gui.back", "&c返回");
         messages.put("gui.click-to-upgrade", "&e点击升级");
         messages.put("gui.click-to-interact", "&e点击交互");
+        messages.put("gui.page-info", "&7使用 &e{command} &7查看其他页面");
         
         // 跟随相关消息
         messages.put("follow.start", "&a村民开始跟随你");
@@ -135,16 +140,40 @@ public class MessageManager {
         messages.put("upgrade-types.PROTECTION", "防护能力");
         messages.put("upgrade-types.RESTOCK_SPEED", "补货速度");
         messages.put("upgrade-types.CROP_GROWTH", "作物产量");
+        messages.put("upgrade-types.CROP_YIELD", "作物产量");
         messages.put("upgrade-types.TRADE_AMOUNT", "交易数量");
         messages.put("upgrade-types.TRADE_QUALITY", "交易质量");
         messages.put("upgrade-types.TRADE_PRICE", "交易价格");
+        
+        // 帮助相关消息
+        messages.put("help.title", "&6=== VillagePro 命令帮助 ===");
+        messages.put("help.page", "&e第 {current} 页 / 共 {total} 页");
+        messages.put("help.command-format", "&a/villagerpro {command} {args} &7- &f{description}");
+        messages.put("help.player-only", "&c该命令只能由玩家执行!");
+        messages.put("help.invalid-usage", "&c无效的命令用法! 请使用 &a/villagerpro help &c查看帮助");
+        messages.put("help.page-info", "&7使用 &e{command} &7查看其他页面");
+        messages.put("help.page-not-found", "&c第 {page} 页不存在，总共有 {total} 页");
+        
+        // 村民相关消息
+        messages.put("villager.not-found", "&c未找到村民!");
+        messages.put("villager.already-recruited", "&c该村民已被招募!");
+        messages.put("villager.max-villagers-reached", "&c你已达到最大村民数量限制!");
+        messages.put("villager.recruited", "&a成功招募村民!");
+        messages.put("villager.name", "&a{player}的村民");
+        
+        // 村庄相关消息
+        messages.put("village.created", "&a村庄创建成功!");
+        messages.put("village.not-found", "&c你还没有村庄!");
+        messages.put("village.upgraded", "&a村庄升级成功!");
     }
     
     private void loadConfigMessages() {
         // 从配置文件加载消息，如果存在则覆盖默认消息
-        for (String key : messagesConfig.getKeys(true)) {
-            if (messagesConfig.isString(key)) {
-                messages.put(key, messagesConfig.getString(key));
+        if (messagesConfig != null) {
+            for (String key : messagesConfig.getKeys(true)) {
+                if (messagesConfig.isString(key)) {
+                    messages.put(key, messagesConfig.getString(key));
+                }
             }
         }
     }

@@ -10,40 +10,45 @@ import org.bukkit.entity.Villager;
 import org.jetbrains.annotations.NotNull;
 
 public class RecruitCommand implements CommandExecutor {
+
     private final VillagePro plugin;
+    private final FollowManager followManager;
 
     public RecruitCommand(VillagePro plugin) {
         this.plugin = plugin;
+        this.followManager = plugin.getFollowManager(); // 直接缓存，避免每次 get 调用
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender,
+                             @NotNull Command command,
+                             @NotNull String label,
+                             @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(plugin.getMessageManager().getMessage("help.player-only"));
             return true;
         }
-        
+
+        // 权限检查（任意一个满足即通过）
         if (!player.hasPermission("villagepro.recruit") && !player.hasPermission("villagepro.admin")) {
             player.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
 
         // 查找最近的未招募村民
-        Villager villager = plugin.getVillageManager().findNearestUnrecruitedVillager(player, 5);
-        if (villager == null) {
+        Villager target = plugin.getVillageManager().findNearestUnrecruitedVillager(player, 5);
+        if (target == null) {
             player.sendMessage(plugin.getMessageManager().getMessage("recruit.failed"));
             return true;
         }
 
-        // 尝试招募村民
-        if (plugin.getVillageManager().recruitVillager(player, villager)) {
-            player.sendMessage(plugin.getMessageManager().getMessage("recruit.success"));
-            
-            // 询问是否跟随
-            plugin.getFollowManager().requestFollow(player, villager);
+        // 真正的业务交给 VillageManager 完成（包括消息发送）
+        boolean success = plugin.getVillageManager().recruitVillager(player, target);
+        if (success) {
+            // 成功后询问是否跟随
+            followManager.requestFollow(player, target);
         }
-        // recruitVillager方法内部已经发送了具体的错误消息
-
+        // 若失败，错误信息已在 recruitVillager 中发送
         return true;
     }
 }

@@ -14,7 +14,6 @@ import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
@@ -23,12 +22,12 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 
-public class VillagerCommand implements CommandExecutor, TabCompleter {
+public class VillagerCommand implements CommandExecutor {
     private final VillagePro plugin;
     private final MessageManager messageManager;
     private final List<SubCommand> subCommands = new ArrayList<>();
@@ -44,7 +43,6 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
         subCommands.add(new InfoSubCommand(plugin));
         subCommands.add(new ListSubCommand(plugin));
         subCommands.add(new RemoveSubCommand(plugin));
-        subCommands.add(new RecruitSubCommand(plugin));
     }
 
     @Override
@@ -80,40 +78,6 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
         return true;
     }
     
-    @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        List<String> completions = new ArrayList<>();
-        
-        if (args.length == 1) {
-            // 补全子命令
-            for (SubCommand subCommand : subCommands) {
-                if (subCommand.getName().startsWith(args[0].toLowerCase())) {
-                    completions.add(subCommand.getName());
-                }
-            }
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("upgrade")) {
-            // 补全升级类型
-            for (UpgradeType type : UpgradeType.values()) {
-                if (type.name().toLowerCase().startsWith(args[1].toLowerCase())) {
-                    completions.add(type.name().toLowerCase());
-                }
-            }
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("remove")) {
-            // 补全村民ID
-            Player player = (Player) sender;
-            Village village = plugin.getVillageManager().getVillage(player.getUniqueId());
-            if (village != null) {
-                for (UUID villagerId : village.getVillagerIds()) {
-                    if (villagerId.toString().startsWith(args[1].toLowerCase())) {
-                        completions.add(villagerId.toString());
-                    }
-                }
-            }
-        }
-        
-        return completions;
-    }
-    
     /**
      * 发送村民相关帮助信息
      * @param player 玩家
@@ -137,37 +101,30 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
         // 分页显示帮助信息
         if (page == 1) {
             // 第一页：基本命令
-            player.sendMessage(ChatColor.GOLD + "=== 村民管理命令 ===");
-            player.sendMessage(ChatColor.YELLOW + "/villager production" + ChatColor.GRAY + " - " + ChatColor.WHITE + "打开村民产出界面");
-            player.sendMessage(ChatColor.YELLOW + "/villager upgrade <type>" + ChatColor.GRAY + " - " + ChatColor.WHITE + "升级村民能力");
-            player.sendMessage(ChatColor.YELLOW + "/villager follow [mode]" + ChatColor.GRAY + " - " + ChatColor.WHITE + "切换村民跟随模式");
-            player.sendMessage(ChatColor.YELLOW + "/villager info" + ChatColor.GRAY + " - " + ChatColor.WHITE + "显示村民详细信息");
-            player.sendMessage(ChatColor.YELLOW + "/villager list" + ChatColor.GRAY + " - " + ChatColor.WHITE + "列出所有村民");
-            player.sendMessage(ChatColor.YELLOW + "/villager remove <id>" + ChatColor.GRAY + " - " + ChatColor.WHITE + "移除村民");
-            player.sendMessage(ChatColor.YELLOW + "/villager recruit" + ChatColor.GRAY + " - " + ChatColor.WHITE + "招募附近的村民");
-            player.sendMessage(ChatColor.YELLOW + "/villager recruit help" + ChatColor.GRAY + " - " + ChatColor.WHITE + "查看招募条件");
-            player.sendMessage(ChatColor.YELLOW + "/villager help [页码]" + ChatColor.GRAY + " - " + ChatColor.WHITE + "显示帮助信息");
+            for (SubCommand subCommand : subCommands) {
+                player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
+                    "command", "villager " + subCommand.getName(),
+                    "args", subCommand.getUsage(),
+                    "description", subCommand.getDescription()
+                )));
+            }
             
             // 发送分页提示
             player.sendMessage(messageManager.getMessage("help.page-info", Map.of(
-                "current", "1",
-                "total", "2",
                 "command", "/villager help [页码]"
             )));
         } else if (page == 2) {
             // 第二页：职业和技能信息
-            player.sendMessage(ChatColor.GOLD + "=== 村民职业与技能 ===");
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6=== 村民职业与技能 ==="));
             for (VillagerProfession profession : VillagerProfession.values()) {
-                player.sendMessage(ChatColor.YELLOW + profession.getDisplayName() + ":");
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&e" + profession.getDisplayName() + ":"));
                 for (ProfessionSkill skill : profession.getSkills()) {
-                    player.sendMessage("  " + ChatColor.GRAY + "- " + ChatColor.WHITE + skill.getDisplayName() + " (" + ChatColor.YELLOW + skill.name() + ChatColor.WHITE + ") - " + skill.getDescription());
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7- &f" + skill.getDisplayName() + " (&e" + skill.name() + "&f) - " + skill.getDescription()));
                 }
             }
             
             // 发送分页提示
             player.sendMessage(messageManager.getMessage("help.page-info", Map.of(
-                "current", "2",
-                "total", "2",
                 "command", "/villager help [页码]"
             )));
         } else {
@@ -228,7 +185,7 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
         
         @Override
         public String getUsage() {
-            return "<type>";
+            return "<type> <level>";
         }
         
         @Override
@@ -238,10 +195,10 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
         
         @Override
         public void execute(Player player, String[] args) {
-            if (args.length < 2) {
+            if (args.length < 3) {
                 player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
                     "command", "villager upgrade",
-                    "args", "<type>",
+                    "args", "<type> <level>",
                     "description", "升级村民能力"
                 )));
                 return;
@@ -249,7 +206,8 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
             
             try {
                 UpgradeType type = UpgradeType.valueOf(args[1].toUpperCase());
-                plugin.getVillageManager().upgradeVillage(player, type);
+                int level = Integer.parseInt(args[2]);
+                plugin.getVillageManager().upgradeVillage(player, type, level);
             } catch (IllegalArgumentException e) {
                 player.sendMessage(messageManager.getMessage("upgrade.failed"));
             }
@@ -305,12 +263,15 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
                 }
             }
             
-            // 切换跟随模式
-            plugin.getFollowManager().setFollowMode(nearestVillager, followMode);
-            
-            // 发送相应消息
-            String modeMessageKey = "follow." + followMode.name().toLowerCase();
-            player.sendMessage(messageManager.getMessage(modeMessageKey));
+            // 设置村民的跟随模式
+            VillagerEntity villagerEntity = plugin.getVillagerEntities().get(nearestVillager.getUniqueId());
+            if (villagerEntity != null) {
+                villagerEntity.setFollowMode(followMode);
+                
+                // 发送对应的消息
+                String messageKey = "follow." + followMode.name().toLowerCase();
+                player.sendMessage(messageManager.getMessage(messageKey));
+            }
         }
     }
     
@@ -347,22 +308,17 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
             }
             
             // 检查是否是玩家自己的村民
-            UUID villagerUuid = nearestVillager.getUniqueId();
-            VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerUuid);
-            if (villagerEntity == null) {
+            if (!plugin.getVillagerEntities().containsKey(nearestVillager.getUniqueId())) {
                 player.sendMessage(messageManager.getMessage("villager.not-found"));
                 return;
             }
             
             // 显示村民信息
-            player.sendMessage(ChatColor.GREEN + "=== 村民信息 ===");
-            player.sendMessage(ChatColor.WHITE + "职业: " + ChatColor.YELLOW + villagerEntity.getProfession().getDisplayName());
-            player.sendMessage(ChatColor.WHITE + "跟随模式: " + ChatColor.YELLOW + villagerEntity.getFollowMode().name());
-            
-            // 显示技能信息
-            player.sendMessage(ChatColor.WHITE + "技能:");
-            for (ProfessionSkill skill : villagerEntity.getProfession().getSkills()) {
-                player.sendMessage("  " + ChatColor.GRAY + "- " + ChatColor.WHITE + skill.getDisplayName() + " (" + ChatColor.YELLOW + skill.name() + ChatColor.WHITE + ")");
+            VillagerEntity villagerEntity = plugin.getVillagerEntities().get(nearestVillager.getUniqueId());
+            if (villagerEntity != null) {
+                player.sendMessage(messageManager.getMessage("villager.name", Map.of("player", player.getName())));
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&7职业: &e" + villagerEntity.getProfession().getDisplayName()));
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&7跟随模式: &e" + villagerEntity.getFollowMode().name()));
             }
         }
     }
@@ -392,30 +348,26 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
         
         @Override
         public void execute(Player player, String[] args) {
+            // 获取玩家的村庄
             Village village = plugin.getVillageManager().getVillage(player.getUniqueId());
-            if (village == null || village.getVillagerIds().isEmpty()) {
-                player.sendMessage(messageManager.getMessage("villager.not-found"));
+            if (village == null) {
+                player.sendMessage(messageManager.getMessage("village.not-found"));
                 return;
             }
             
-            player.sendMessage(ChatColor.GREEN + "=== 你的村民列表 ===");
+            // 列出所有村民
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6=== 你的村民列表 ==="));
             for (UUID villagerId : village.getVillagerIds()) {
                 VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerId);
                 if (villagerEntity != null) {
-                    Villager villager = villagerEntity.getVillager();
+                    Villager villager = villagerEntity.getBukkitEntity();
                     if (villager != null && villager.isValid()) {
-                        player.sendMessage(ChatColor.WHITE + villagerId.toString() + " - " + 
-                                         ChatColor.YELLOW + villagerEntity.getProfession().getDisplayName() +
-                                         ChatColor.GRAY + " (" + villager.getName() + ChatColor.GRAY + ")");
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+                            "&e" + villager.getCustomName() + " &7- 职业: " + villagerEntity.getProfession().getDisplayName()));
                     } else {
-                        player.sendMessage(ChatColor.WHITE + villagerId.toString() + " - " + 
-                                         ChatColor.YELLOW + villagerEntity.getProfession().getDisplayName() +
-                                         ChatColor.GRAY + " (离线)");
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+                            "&c[ID: " + villagerId.toString().substring(0, 8) + "] 村民已离线或不存在"));
                     }
-                } else {
-                    // 村民实体不存在，但仍在村庄数据中
-                    player.sendMessage(ChatColor.WHITE + villagerId.toString() + " - " + 
-                                     ChatColor.GRAY + "未知村民 (可能已死亡或丢失)");
                 }
             }
         }
@@ -457,117 +409,19 @@ public class VillagerCommand implements CommandExecutor, TabCompleter {
             
             try {
                 UUID villagerId = UUID.fromString(args[1]);
-                Village village = plugin.getVillageManager().getVillage(player.getUniqueId());
                 
+                // 获取玩家的村庄
+                Village village = plugin.getVillageManager().getVillage(player.getUniqueId());
                 if (village == null || !village.getVillagerIds().contains(villagerId)) {
                     player.sendMessage(messageManager.getMessage("villager.not-found"));
                     return;
                 }
                 
-                VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerId);
-                if (villagerEntity != null) {
-                    Villager villager = villagerEntity.getVillager();
-                    if (villager != null) {
-                        // 移除村民实体
-                        villager.remove();
-                    }
-                }
-                
-                // 从村庄数据中移除
-                village.getVillagerIds().remove(villagerId);
-                plugin.getVillageManager().saveVillage(village);
-                plugin.getVillagerEntities().remove(villagerId);
-                
-                player.sendMessage(ChatColor.GREEN + "成功移除村民!");
+                // 移除村民
+                plugin.getVillageManager().removeVillager(player, villagerId);
             } catch (IllegalArgumentException e) {
                 player.sendMessage(messageManager.getMessage("villager.not-found"));
             }
-        }
-    }
-    
-    // 招募子命令
-    private class RecruitSubCommand implements SubCommand {
-        private final VillagePro plugin;
-        
-        public RecruitSubCommand(VillagePro plugin) {
-            this.plugin = plugin;
-        }
-        
-        @Override
-        public String getName() {
-            return "recruit";
-        }
-        
-        @Override
-        public String getUsage() {
-            return "";
-        }
-        
-        @Override
-        public String getDescription() {
-            return "招募附近的村民";
-        }
-        
-        @Override
-        public void execute(Player player, String[] args) {
-            // 如果有帮助参数，显示招募条件
-            if (args.length > 1 && args[1].equalsIgnoreCase("help")) {
-                showRecruitRequirements(player);
-                return;
-            }
-            
-            // 查找最近的未招募村民
-            Villager villager = plugin.getVillageManager().findNearestUnrecruitedVillager(player, 5);
-            if (villager == null) {
-                player.sendMessage(plugin.getMessageManager().getMessage("recruit.failed"));
-                return;
-            }
-
-            // 尝试招募村民
-            if (plugin.getVillageManager().recruitVillager(player, villager)) {
-                player.sendMessage(plugin.getMessageManager().getMessage("recruit.success"));
-                
-                // 询问是否跟随
-                plugin.getFollowManager().requestFollow(player, villager);
-            }
-            // recruitVillager方法内部已经发送了具体的错误消息
-        }
-        
-        private void showRecruitRequirements(Player player) {
-            player.sendMessage(ChatColor.GOLD + "=== 村民招募条件 ===");
-            
-            // 显示最大村民数量
-            int maxVillagers = plugin.getConfigManager().getMaxVillagers();
-            player.sendMessage(ChatColor.WHITE + "最大村民数量: " + ChatColor.YELLOW + maxVillagers);
-            
-            // 显示所需金钱
-            double costMoney = plugin.getConfigManager().getRecruitCostMoney();
-            if (costMoney > 0) {
-                player.sendMessage(ChatColor.WHITE + "所需金钱: " + ChatColor.YELLOW + costMoney);
-            }
-            
-            // 显示所需物品
-            Map<String, Integer> costItems = plugin.getConfigManager().getRecruitCostItems();
-            if (!costItems.isEmpty()) {
-                player.sendMessage(ChatColor.WHITE + "所需物品:");
-                for (Map.Entry<String, Integer> entry : costItems.entrySet()) {
-                    String itemName = entry.getKey();
-                    int amount = entry.getValue();
-                    // 尝试获取物品的显示名称
-                    String displayName;
-                    try {
-                        Material material = Material.valueOf(itemName);
-                        displayName = material.name().toLowerCase().replace("_", " ");
-                    } catch (IllegalArgumentException e) {
-                        displayName = itemName.toLowerCase().replace("_", " ");
-                    }
-                    player.sendMessage("  " + ChatColor.GRAY + "- " + ChatColor.WHITE + displayName + ": " + ChatColor.YELLOW + amount);
-                }
-            } else {
-                player.sendMessage(ChatColor.WHITE + "所需物品: " + ChatColor.YELLOW + "无");
-            }
-            
-            player.sendMessage(ChatColor.GRAY + "使用 /villager recruit 招募村民");
         }
     }
 }

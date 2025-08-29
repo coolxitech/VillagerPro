@@ -15,11 +15,15 @@ public class VillagerUtils {
     /**
      * 设置村民的所有者
      * @param villager 村民实体
-     * @param ownerUuid 所有者UUID
+     * @param ownerUuid 所有者UUID，如果为null则移除所有者
      */
     public static void setOwner(Villager villager, UUID ownerUuid) {
         PersistentDataContainer pdc = villager.getPersistentDataContainer();
-        pdc.set(OWNER_KEY, PersistentDataType.STRING, ownerUuid.toString());
+        if (ownerUuid != null) {
+            pdc.set(OWNER_KEY, PersistentDataType.STRING, ownerUuid.toString());
+        } else {
+            pdc.remove(OWNER_KEY);
+        }
     }
     
     /**
