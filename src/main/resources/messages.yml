@@ -61,6 +61,23 @@ commands:
   villagepro:
     description: "显示插件信息和基本用法"
     usage: "&e使用: &a/villagerpro help [页码]"
+    help:
+      - "&6===== VillagePro 帮助 ====="
+      - "&a/villagerpro help [页码] &7- &f显示帮助信息"
+      - "&a/villager production &7- &f打开村民产出界面"
+      - "&a/villager upgrade <type> &7- &f升级村民能力"
+      - "&a/villager follow &7- &f切换村民跟随模式"
+      - "&a/villager info &7- &f显示村民详细信息"
+      - "&a/villager list &7- &f列出所有村民"
+      - "&a/villager remove <id> &7- &f移除村民"
+      - "&a/village create &7- &f创建新村庄"
+      - "&a/village upgrade &7- &f升级村庄"
+      - "&a/village info &7- &f显示村庄信息"
+      - "&a/recruit [profession] &7- &f招募村民"
+      - "&a/crop withdraw <type> <amount> &7- &f取出作物"
+      - "&a/crop deposit <type> <amount> &7- &f存储作物"
+      - "&a/crop balance &7- &f查看作物余额"
+      - "&a/task &7- &f打开任务界面"
   
   villager:
     description: "管理村民的主命令"
@@ -72,6 +89,14 @@ commands:
       info: "显示村民详细信息"
       list: "列出所有村民"
       remove: "移除村民"
+    help:
+      - "&6===== Villager 命令帮助 ====="
+      - "&a/villager production &7- &f打开村民产出界面"
+      - "&a/villager upgrade <type> &7- &f升级村民能力"
+      - "&a/villager follow &7- &f切换村民跟随模式"
+      - "&a/villager info &7- &f显示村民详细信息"
+      - "&a/villager list &7- &f列出所有村民"
+      - "&a/villager remove <id> &7- &f移除村民"
       
   village:
     description: "管理村庄的主命令"
@@ -80,11 +105,20 @@ commands:
       create: "创建新村庄"
       upgrade: "升级村庄"
       info: "显示村庄信息"
+    help:
+      - "&6===== Village 命令帮助 ====="
+      - "&a/village create &7- &f创建新村庄"
+      - "&a/village upgrade &7- &f升级村庄"
+      - "&a/village info &7- &f显示村庄信息"
       
   recruit:
     description: "招募新村民"
     usage: "&e使用: &a/recruit [职业]"
-    
+    help:
+      - "&6===== Recruit 命令帮助 ====="
+      - "&a/recruit [profession] &7- &f招募村民"
+      - "&7可选职业: &ffarmer, fisherman, shepherd, librarian, weaponsmith, toolsmith, armorer, butcher, leatherworker, cartographer, cleric, fletcher"
+      
   crop:
     description: "管理作物存储和产出"
     usage: "&e使用: &a/crop [subcommand] [args]"
@@ -92,7 +126,28 @@ commands:
       withdraw: "取出作物"
       deposit: "存储作物"
       balance: "查看作物余额"
+    help:
+      - "&6===== Crop 命令帮助 ====="
+      - "&a/crop withdraw <type> <amount> &7- &f取出作物"
+      - "&a/crop deposit <type> <amount> &7- &f存储作物"
+      - "&a/crop balance &7- &f查看作物余额"
       
+  task:
+    description: "打开任务界面"
+    usage: "&e使用: &a/task"
+    help:
+      - "&6===== Task 命令帮助 ====="
+      - "&a/task &7- &f打开任务界面"
+      - "&7在任务界面中可以生成随机任务并查看当前任务"
+  
+  upgrade:
+    description: "升级村庄能力"
+    usage: "&e使用: &a/upgrade <type>"
+    help:
+      - "&6===== Upgrade 命令帮助 ====="
+      - "&a/upgrade <type> &7- &f升级村庄能力"
+      - "&7可选类型: &fTRADE, HEALTH, SPEED, PROTECTION, RESTOCK_SPEED, CROP_GROWTH, CROP_YIELD, TRADE_AMOUNT, TRADE_QUALITY, TRADE_PRICE"
+  
 # 村民相关消息
 follow:
   start: "&a村民开始跟随你"
@@ -165,3 +220,77 @@ upgrade-types:
   TRADE_AMOUNT: "交易数量"
   TRADE_QUALITY: "交易质量"
   TRADE_PRICE: "交易价格"
+
+# 权限
+permissions:
+  villagepro.*:
+    description: "访问所有VillagePro命令"
+    default: op
+    children:
+      villagepro.village.*: true
+      villagepro.villager.*: true
+      villagepro.crop.*: true
+      villagepro.task: true
+  villagepro.village.*:
+    description: "访问所有村庄命令"
+    default: op
+    children:
+      villagepro.village.create: true
+      villagepro.village.upgrade: true
+      villagepro.village.info: true
+  villagepro.villager.*:
+    description: "访问所有村民命令"
+    default: true
+    children:
+      villagepro.villager.production: true
+      villagepro.villager.upgrade: true
+      villagepro.villager.follow: true
+      villagepro.villager.info: true
+      villagepro.villager.list: true
+      villagepro.villager.remove: true
+  villagepro.crop.*:
+    description: "访问所有作物命令"
+    default: true
+    children:
+      villagepro.crop.balance: true
+      villagepro.crop.withdraw: true
+      villagepro.crop.deposit: true
+  villagepro.village.create:
+    description: "允许创建村庄"
+    default: true
+  villagepro.village.upgrade:
+    description: "允许升级村庄"
+    default: true
+  villagepro.village.info:
+    description: "允许查看村庄信息"
+    default: true
+  villagepro.villager.production:
+    description: "允许查看村民产出"
+    default: true
+  villagepro.villager.upgrade:
+    description: "允许升级村民"
+    default: true
+  villagepro.villager.follow:
+    description: "允许村民跟随"
+    default: true
+  villagepro.villager.info:
+    description: "允许查看村民信息"
+    default: true
+  villagepro.villager.list:
+    description: "允许列出村民"
+    default: true
+  villagepro.villager.remove:
+    description: "允许移除村民"
+    default: op
+  villagepro.crop.balance:
+    description: "允许查看作物余额"
+    default: true
+  villagepro.crop.withdraw:
+    description: "允许取出作物"
+    default: true
+  villagepro.crop.deposit:
+    description: "允许存储作物"
+    default: true
+  villagepro.task:
+    description: "允许使用任务系统"
+    default: true

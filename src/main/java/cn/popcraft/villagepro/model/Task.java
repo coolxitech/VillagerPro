@@ -44,6 +44,21 @@ public class Task {
     private String description;    // 任务描述
     private List<ItemStack> itemRewards;
 
+    // 添加构造函数
+    public Task() {
+        this.taskId = UUID.randomUUID();
+    }
+
+    // 添加带参数的构造函数
+    public Task(TaskType type, int targetAmount, double rewardMoney, int rewardExp) {
+        this();
+        this.type = type;
+        this.targetAmount = targetAmount;
+        this.rewardMoney = rewardMoney;
+        this.rewardExp = rewardExp;
+        this.progress = 0;
+    }
+
     public List<ItemStack> getItemRewards() {
         return itemRewards;
     }

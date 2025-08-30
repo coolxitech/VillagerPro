@@ -3,9 +3,9 @@ package cn.popcraft.villagepro.listener;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.FollowMode;
 import cn.popcraft.villagepro.model.UpgradeType;
-import cn.popcraft.villagepro.model.Village;
+
 import cn.popcraft.villagepro.model.VillagerEntity;
-import cn.popcraft.villagepro.model.VillagerProfession;
+
 import cn.popcraft.villagepro.util.VillagerUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -205,6 +205,11 @@ public class VillagerListener implements Listener {
      */
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onVillagerAcquireTrade(VillagerAcquireTradeEvent event) {
+        // 检查实体是否为普通村民，流浪商人不处理
+        if (!(event.getEntity() instanceof org.bukkit.entity.Villager)) {
+            return;
+        }
+        
         org.bukkit.entity.Villager villager = (org.bukkit.entity.Villager) event.getEntity();
         
         // 检查是否是被招募的村民

@@ -3,7 +3,7 @@ package cn.popcraft.villagepro.listener;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.TaskManager;
 import cn.popcraft.villagepro.model.Task;
-import cn.popcraft.villagepro.model.Task;
+
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -15,7 +15,7 @@ import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.player.PlayerExpChangeEvent;
+
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -27,7 +27,7 @@ import org.bukkit.ChatColor;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.UUID;
+
 
 public class VillageProTaskListener implements Listener {
     private final VillagePro plugin;
@@ -71,6 +71,69 @@ public class VillageProTaskListener implements Listener {
                         checkAndCompleteTask(player, task);
                     }
                     break;
+                case COLLECT_WHEAT:
+                    // 收集小麦任务将在其他事件中处理
+                    break;
+                case REACH_LEVEL:
+                    // 达到等级任务将在PlayerLevelChangeEvent中处理
+                    break;
+                case TRADE_WITH_VILLAGER:
+                    // 与村民交易任务将在其他事件中处理
+                    break;
+                case BAKE_BREAD:
+                    // 烘焙面包任务将在其他事件中处理
+                    break;
+                case BREW_POTION:
+                    // 酿造药水任务将在其他事件中处理
+                    break;
+                case ENCHANT_ITEM:
+                    // 附魔物品任务将在其他事件中处理
+                    break;
+                case KILL_ENDERMAN:
+                    // 击杀末影人任务将在EntityDeathEvent中处理
+                    break;
+                case KILL_SKELETON:
+                    // 击杀骷髅任务将在EntityDeathEvent中处理
+                    break;
+                case HARVEST_CROP:
+                    // 收获作物任务将在其他事件中处理
+                    break;
+                case SHEAR_SHEEP:
+                    // 剪羊毛任务将在其他事件中处理
+                    break;
+                case KILL_ZOMBIE:
+                    // 击杀僵尸任务将在EntityDeathEvent中处理
+                    break;
+                case TAME_ANIMAL:
+                    // 驯服动物任务将在其他事件中处理
+                    break;
+                case KILL_CREEPER:
+                    // 击杀苦力怕任务将在EntityDeathEvent中处理
+                    break;
+                case COLLECT_FLOWER:
+                    // 收集花朵任务将在其他事件中处理
+                    break;
+                case MILK_COW:
+                    // 挤牛奶任务将在其他事件中处理
+                    break;
+                case EXPLORE_BIOME:
+                    // 探索生物群系任务将在其他事件中处理
+                    break;
+                case FISH_ITEM:
+                    // 钓鱼任务将在其他事件中处理
+                    break;
+                case DELIVER_POTION:
+                    // 递送药水任务将在其他事件中处理
+                    break;
+                case CRAFT_ITEM:
+                    // 制作物品任务将在CraftItemEvent中处理
+                    break;
+                case KILL_SPIDER:
+                    // 击杀蜘蛛任务将在EntityDeathEvent中处理
+                    break;
+                case BREED_ANIMAL:
+                    // 繁殖动物任务将在其他事件中处理
+                    break;
             }
         }
     }
@@ -85,6 +148,9 @@ public class VillageProTaskListener implements Listener {
             
             for (Task task : activeTasks) {
                 switch (task.getType()) {
+                    case COLLECT_WOOD:
+                        // 收集木材任务将在BlockBreakEvent中处理
+                        break;
                     case KILL_ZOMBIE:
                         if (entityType == EntityType.ZOMBIE) {
                             taskManager.updateTaskProgress(player.getUniqueId(), task.getId(), 1);
@@ -115,6 +181,63 @@ public class VillageProTaskListener implements Listener {
                             checkAndCompleteTask(player, task);
                         }
                         break;
+                    case COLLECT_WHEAT:
+                        // 收集小麦任务将在其他事件中处理
+                        break;
+                    case REACH_LEVEL:
+                        // 达到等级任务将在PlayerLevelChangeEvent中处理
+                        break;
+                    case TRADE_WITH_VILLAGER:
+                        // 与村民交易任务将在其他事件中处理
+                        break;
+                    case BAKE_BREAD:
+                        // 烘焙面包任务将在其他事件中处理
+                        break;
+                    case BREW_POTION:
+                        // 酿造药水任务将在其他事件中处理
+                        break;
+                    case ENCHANT_ITEM:
+                        // 附魔物品任务将在其他事件中处理
+                        break;
+                    case HARVEST_CROP:
+                        // 收获作物任务将在其他事件中处理
+                        break;
+                    case SHEAR_SHEEP:
+                        // 剪羊毛任务将在其他事件中处理
+                        break;
+                    case TAME_ANIMAL:
+                        // 驯服动物任务将在其他事件中处理
+                        break;
+                    case COLLECT_FLOWER:
+                        // 收集花朵任务将在其他事件中处理
+                        break;
+                    case MILK_COW:
+                        // 挤牛奶任务将在其他事件中处理
+                        break;
+                    case EXPLORE_BIOME:
+                        // 探索生物群系任务将在其他事件中处理
+                        break;
+                    case FISH_ITEM:
+                        // 钓鱼任务将在其他事件中处理
+                        break;
+                    case DELIVER_POTION:
+                        // 递送药水任务将在其他事件中处理
+                        break;
+                    case CRAFT_ITEM:
+                        // 制作物品任务将在CraftItemEvent中处理
+                        break;
+                    case BREED_ANIMAL:
+                        // 繁殖动物任务将在其他事件中处理
+                        break;
+                    case MINE_DIAMOND:
+                        // 挖钻石任务将在BlockBreakEvent中处理
+                        break;
+                    case MINE_IRON:
+                        // 挖铁矿石任务将在BlockBreakEvent中处理
+                        break;
+                    case MINE_STONE:
+                        // 挖掘石头任务将在BlockBreakEvent中处理
+                        break;
                 }
             }
         }
@@ -125,7 +248,6 @@ public class VillageProTaskListener implements Listener {
         if (event.getWhoClicked() instanceof Player) {
             Player player = (Player) event.getWhoClicked();
             ItemStack result = event.getRecipe().getResult();
-            Material craftedType = result.getType();
             int amount = result.getAmount();
             
             List<Task> activeTasks = taskManager.getPlayerActiveTasks(player.getUniqueId());
@@ -182,7 +304,8 @@ public class VillageProTaskListener implements Listener {
         List<Task> activeTasks = taskManager.getPlayerActiveTasks(player.getUniqueId());
         
         for (Task task : activeTasks) {
-            if (task.getType().equals("CONSUME")) {
+            // 修复类型比较错误，从字符串比较改为枚举比较
+            if (task.getType() == Task.TaskType.DELIVER_POTION) {
                 if (task.getTargetItem().equalsIgnoreCase(consumedType.name())) {
                     taskManager.updateTaskProgress(player.getUniqueId(), task.getTaskId(), 1);
                     
@@ -268,27 +391,17 @@ public class VillageProTaskListener implements Listener {
         }
     }
     
-    /**
-     * 创建进度条
-     */
-    private String createProgressBar(double percentage) {
-        int barLength = 20;
-        int filledLength = (int) (barLength * percentage / 100);
-        
-        StringBuilder bar = new StringBuilder();
-        bar.append(ChatColor.GREEN);
-        
-        for (int i = 0; i < barLength; i++) {
-            if (i < filledLength) {
-                bar.append("█");
-            } else if (i == filledLength && percentage % (100.0 / barLength) > 0) {
-                bar.append("▌");
-            } else {
-                bar.append(ChatColor.GRAY).append("█");
-            }
-        }
-        
-        return bar.toString();
+    private void showTaskProgress(Player player, Task task) {
+        // 显示任务进度信息
+        double progressPercentage = (double) task.getProgress() / task.getTargetAmount() * 100;
+        String message = String.format(
+            "任务进度: %s [%d/%d] %.1f%%", 
+            task.getType().name(),
+            task.getProgress(), 
+            task.getTargetAmount(), 
+            progressPercentage
+        );
+        player.sendMessage(message);
     }
     
     private void completeTask(Player player, Task task) {
@@ -296,21 +409,10 @@ public class VillageProTaskListener implements Listener {
         Map<String, String> replacements = new HashMap<>();
         replacements.put("task", task.getDescription());
         replacements.put("reward", task.getRewardDescription());
-        player.sendMessage(plugin.getMessageManager().getMessage("task.completed", replacements));
         
-        // 发放奖励
-        taskManager.rewardPlayer(player);
+        player.sendMessage("任务完成!");
         
-        // 从任务列表中移除
+        // 移除已完成的任务
         taskManager.completeTask(player.getUniqueId(), task.getId());
-    }
-
-    private void showTaskProgress(Player player, Task task) {
-        Map<String, String> replacements = new HashMap<>();
-        replacements.put("task", task.getDescription());
-        replacements.put("progress", String.valueOf(task.getProgress()));
-        replacements.put("target", String.valueOf(task.getTargetAmount()));
-        replacements.put("percentage", String.format("%.1f", (double) task.getProgress() / task.getTargetAmount() * 100));
-        player.sendMessage(plugin.getMessageManager().getMessage("task.progress", replacements));
     }
 }

@@ -208,15 +208,10 @@ public class CropCommand implements CommandExecutor, TabCompleter {
     }
     
     private void showHelp(Player player) {
-        player.sendMessage(ChatColor.GREEN + "=== 作物命令帮助 ===");
-        player.sendMessage(ChatColor.WHITE + "/crop list - 显示作物列表");
-        player.sendMessage(ChatColor.WHITE + "/crop info <作物类型> - 显示作物信息");
-        player.sendMessage(ChatColor.WHITE + "/crop harvest <作物类型> [数量] - 收获作物");
-        player.sendMessage(ChatColor.WHITE + "/crop store <作物类型> <数量> - 存储作物");
-        player.sendMessage(ChatColor.WHITE + "/crop balance - 查看作物余额");
-        player.sendMessage(ChatColor.WHITE + "/crop withdraw <作物类型> [数量] - 取出作物");
-        player.sendMessage(ChatColor.WHITE + "/crop deposit <作物类型> <数量> - 存入作物");
-        player.sendMessage(ChatColor.WHITE + "/crop help - 显示此帮助信息");
+        List<String> helpMessages = plugin.getMessageManager().getMessageList("commands.crop.help");
+        for (String message : helpMessages) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+        }
     }
     
     @Override

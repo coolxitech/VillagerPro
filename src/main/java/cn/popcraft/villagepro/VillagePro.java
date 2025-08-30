@@ -44,9 +44,6 @@ public final class VillagePro extends JavaPlugin {
     // Storage
     private VillageStorage villageStorage;
     
-    // Economy
-    private Economy economy = null;
-    
     // Villager entities map
     private final Map<UUID, VillagerEntity> villagerEntities = new HashMap<>();
     private final Gson gson = new Gson();
@@ -62,9 +59,11 @@ public final class VillagePro extends JavaPlugin {
         // 初始化存储
         villageStorage = new VillageStorage(this, gson);
         
-        // 按正确的顺序初始化管理器
-        this.configManager = new ConfigManager(this); // ConfigManager必须在使用配置的管理器之前初始化
-        this.messageManager = new MessageManager(this); // MessageManager依赖ConfigManager
+        // 初始化配置管理器
+        this.configManager = new ConfigManager(this);
+        
+        // 初始化消息管理器
+        this.messageManager = new MessageManager(this);
         
         // 初始化其他管理器
         this.villageManager = new VillageManager(this);
@@ -94,6 +93,7 @@ public final class VillagePro extends JavaPlugin {
         this.getCommand("crop").setExecutor(new CropCommand(this));
         this.getCommand("recruit").setExecutor(new RecruitCommand(this));
         this.getCommand("upgrade").setExecutor(new UpgradeCommand(this));
+        this.getCommand("task").setExecutor(new TaskCommand(this));
         
         // 注册事件监听器
         Bukkit.getPluginManager().registerEvents(new VillagerListener(this), this);
@@ -193,11 +193,6 @@ public final class VillagePro extends JavaPlugin {
     // 获取村民实体映射
     public Map<UUID, VillagerEntity> getVillagerEntities() {
         return villagerEntities;
-    }
-    
-    // 获取经济管理器
-    public EconomyManager getEconomyManager() {
-        return economyManager;
     }
     
     // 获取Gson实例

@@ -3,8 +3,6 @@ package cn.popcraft.villagepro.gui;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.MessageManager;
 import cn.popcraft.villagepro.model.VillagerProfession;
-import cn.popcraft.villagepro.model.CropStorage;
-import cn.popcraft.villagepro.manager.CropManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;

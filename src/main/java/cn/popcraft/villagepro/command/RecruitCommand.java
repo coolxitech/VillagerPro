@@ -34,6 +34,12 @@ public class RecruitCommand implements CommandExecutor {
             player.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
+        
+        // 如果有参数且参数为 help，则显示帮助信息
+        if (args.length > 0 && args[0].equalsIgnoreCase("help")) {
+            showHelp(player);
+            return true;
+        }
 
         // 查找最近的未招募村民
         Villager target = plugin.getVillageManager().findNearestUnrecruitedVillager(player, 5);
@@ -50,5 +56,12 @@ public class RecruitCommand implements CommandExecutor {
         }
         // 若失败，错误信息已在 recruitVillager 中发送
         return true;
+    }
+    
+    private void showHelp(Player player) {
+        java.util.List<String> helpMessages = plugin.getMessageManager().getMessageList("commands.recruit.help");
+        for (String message : helpMessages) {
+            player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
+        }
     }
 }

@@ -1,26 +1,30 @@
 package cn.popcraft.villagepro.command;
 
 import cn.popcraft.villagepro.VillagePro;
-import cn.popcraft.villagepro.gui.UpgradeGUI;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/**
- * 升级命令执行器
- */
-public class UpgradeCommand implements CommandExecutor {
+public class TaskCommand implements CommandExecutor {
     private final VillagePro plugin;
 
-    public UpgradeCommand(VillagePro plugin) {
+    public TaskCommand(VillagePro plugin) {
         this.plugin = plugin;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("此命令只能由玩家执行");
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("该命令只能由玩家执行。");
+            return true;
+        }
+
+        Player player = (Player) sender;
+        
+        // 检查权限
+        if (!player.hasPermission("villagepro.task") && !player.hasPermission("villagepro.*")) {
+            player.sendMessage("你没有权限使用此命令。");
             return true;
         }
         
@@ -30,14 +34,13 @@ public class UpgradeCommand implements CommandExecutor {
             return true;
         }
 
-        // 打开升级GUI
-        UpgradeGUI gui = new UpgradeGUI(plugin, player, plugin.getVillageManager().getOrCreateVillage(player));
-        gui.openMainMenu(player);
+        // 打开任务GUI
+        plugin.getTaskGUI().openTaskGUI(player);
         return true;
     }
     
     private void showHelp(Player player) {
-        java.util.List<String> helpMessages = plugin.getMessageManager().getMessageList("commands.upgrade.help");
+        java.util.List<String> helpMessages = plugin.getMessageManager().getMessageList("commands.task.help");
         for (String message : helpMessages) {
             player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
         }

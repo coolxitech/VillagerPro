@@ -28,6 +28,9 @@ commands:
   crop:
     description: Manage crop storage
     usage: /<command> [subcommand]
+  task:
+    description: Open task interface
+    usage: /<command>
 
 permissions:
   villagepro.*:

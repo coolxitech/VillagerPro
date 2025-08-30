@@ -6,8 +6,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.ChatColor;
 
 import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -195,6 +193,13 @@ public class MessageManager {
             }
         }
         return message;
+    }
+    
+    public java.util.List<String> getMessageList(String key) {
+        if (messagesConfig != null && messagesConfig.isList(key)) {
+            return messagesConfig.getStringList(key);
+        }
+        return new java.util.ArrayList<>();
     }
     
     public String getPrefix() {

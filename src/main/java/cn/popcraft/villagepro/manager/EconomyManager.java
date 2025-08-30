@@ -8,7 +8,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.text.DecimalFormat;
-import java.util.logging.Level;
 
 /**
  * 经济管理器，用于处理各种经济插件的兼容性，包括CMI、EssentialsX、PlayerPoints等

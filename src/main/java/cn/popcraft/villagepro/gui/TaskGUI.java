@@ -3,7 +3,6 @@ package cn.popcraft.villagepro.gui;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.TaskManager;
 import cn.popcraft.villagepro.model.Task;
-import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -211,9 +210,6 @@ public class TaskGUI implements Listener {
      */
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) return;
-        
-        Player player = (Player) event.getWhoClicked();
         String inventoryTitle = event.getView().getTitle();
         
         // 阻止在任务GUI中拖拽物品

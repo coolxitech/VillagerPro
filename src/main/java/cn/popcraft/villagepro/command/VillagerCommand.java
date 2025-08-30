@@ -2,30 +2,23 @@ package cn.popcraft.villagepro.command;
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.MessageManager;
-import cn.popcraft.villagepro.model.VillagerProfession;
-import cn.popcraft.villagepro.model.ProfessionSkill;
 import cn.popcraft.villagepro.model.UpgradeType;
 import cn.popcraft.villagepro.model.Village;
 import cn.popcraft.villagepro.model.VillagerEntity;
 import cn.popcraft.villagepro.model.FollowMode;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.Inventory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Map;
-import java.util.HashMap;
+
 
 public class VillagerCommand implements CommandExecutor {
     private final VillagePro plugin;
@@ -54,7 +47,12 @@ public class VillagerCommand implements CommandExecutor {
 
         if (args.length == 0) {
             // 显示帮助信息
-            player.sendMessage(messageManager.getMessage("commands.villager.usage"));
+            sendHelpMessage(player);
+            return true;
+        }
+        
+        if (args[0].equalsIgnoreCase("help")) {
+            sendHelpMessage(player);
             return true;
         }
 
@@ -95,6 +93,17 @@ public class VillagerCommand implements CommandExecutor {
         }
 
         return true;
+    }
+    
+    /**
+     * 发送帮助信息
+     * @param player 玩家
+     */
+    private void sendHelpMessage(Player player) {
+        List<String> helpMessages = messageManager.getMessageList("commands.villager.help");
+        for (String message : helpMessages) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+        }
     }
     
     /**
@@ -169,61 +178,6 @@ public class VillagerCommand implements CommandExecutor {
             }
         } catch (IllegalArgumentException e) {
             player.sendMessage(messageManager.getMessage("commands.villager.remove.invalid-id"));
-        }
-    }
-    
-    /**
-     * 发送村民相关帮助信息
-     * @param player 玩家
-     * @param args 命令参数
-     */
-    private void sendHelpMessage(Player player, String[] args) {
-        int page = 1;
-        if (args.length > 1) {
-            try {
-                page = Integer.parseInt(args[1]);
-            } catch (NumberFormatException e) {
-                player.sendMessage(messageManager.getMessage("help.invalid-usage"));
-                return;
-            }
-        }
-        
-        // 发送帮助标题
-        player.sendMessage(messageManager.getMessage("help.title"));
-        player.sendMessage(messageManager.getMessage("help.page", Map.of("current", String.valueOf(page), "total", "2")));
-        
-        // 分页显示帮助信息
-        if (page == 1) {
-            // 第一页：基本命令
-            for (SubCommand subCommand : subCommands) {
-                player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
-                    "command", "villager " + subCommand.getName(),
-                    "args", subCommand.getUsage(),
-                    "description", subCommand.getDescription()
-                )));
-            }
-            
-            // 发送分页提示
-            player.sendMessage(messageManager.getMessage("help.page-info", Map.of(
-                "command", "/villager help [页码]"
-            )));
-        } else if (page == 2) {
-            // 第二页：职业和技能信息
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6=== 村民职业与技能 ==="));
-            for (VillagerProfession profession : VillagerProfession.values()) {
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&e" + profession.getDisplayName() + ":"));
-                for (ProfessionSkill skill : profession.getSkills()) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', "  &7- &f" + skill.getDisplayName() + " (&e" + skill.name() + "&f) - " + skill.getDescription()));
-                }
-            }
-            
-            // 发送分页提示
-            player.sendMessage(messageManager.getMessage("help.page-info", Map.of(
-                "command", "/villager help [页码]"
-            )));
-        } else {
-            player.sendMessage(messageManager.getMessage("help.page-not-found", Map.of("page", String.valueOf(page), "total", "2")));
-            return;
         }
     }
     

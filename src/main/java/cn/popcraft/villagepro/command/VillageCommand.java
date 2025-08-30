@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class VillageCommand implements CommandExecutor, TabCompleter {
     private final VillagePro plugin;
@@ -160,24 +159,9 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
      * @param player 玩家
      */
     private void sendHelpMessage(Player player) {
-        player.sendMessage(messageManager.getMessage("help.title"));
-        player.sendMessage(messageManager.getMessage("help.page", Map.of("current", "1", "total", "2")));
-        
-        // 发送村庄相关命令
-        player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
-            "command", "village create",
-            "args", "",
-            "description", "创建一个新的村庄")));
-        player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
-            "command", "village upgrade",
-            "args", "<类型>",
-            "description", "升级村庄指定类型")));
-        player.sendMessage(messageManager.getMessage("help.command-format", Map.of(
-            "command", "village info",
-            "args", "",
-            "description", "显示村庄详细信息")));
-        
-        // 发送分页信息
-        player.sendMessage(messageManager.getMessage("help.page", Map.of("current", "1", "total", "2")));
+        List<String> helpMessages = messageManager.getMessageList("commands.village.help");
+        for (String message : helpMessages) {
+            player.sendMessage(message);
+        }
     }
 }

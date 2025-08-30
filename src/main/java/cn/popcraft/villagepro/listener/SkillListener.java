@@ -1,7 +1,6 @@
 package cn.popcraft.villagepro.listener;
 
 import cn.popcraft.villagepro.VillagePro;
-import cn.popcraft.villagepro.model.ProfessionSkill;
 import cn.popcraft.villagepro.model.VillagerProfession;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
