@@ -11,13 +11,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent; // 添加导入
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public class TaskGUI implements Listener {
     private final VillagePro plugin;
@@ -176,11 +176,21 @@ public class TaskGUI implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         String title = event.getView().getTitle();
 
-        if (!title.equals("任务中心") && !title.equals("我的任务")) {
-            return;
+        boolean isTaskGUI = title.equals("任务中心") || title.equals("我的任务");
+        
+        // 如果是任务GUI，完全阻止所有操作
+        if (isTaskGUI) {
+            // 完全阻止所有可能的物品移动操作，包括Shift+点击、双击、拖拽等
+            event.setCancelled(true);
+            event.setResult(org.bukkit.event.Event.Result.DENY);
+        } else {
+            return; // 不是任务GUI，直接返回
         }
 
-        event.setCancelled(true); // 防止玩家拿走物品
+        // 阻止所有类型的点击操作，包括Shift+点击、双击等
+        if (event.getClickedInventory() == null) {
+            return; // 点击的是虚空
+        }
 
         Player player = (Player) event.getWhoClicked();
         ItemStack clickedItem = event.getCurrentItem();
@@ -193,6 +203,23 @@ public class TaskGUI implements Listener {
             handleTaskCenterClick(player, clickedItem);
         } else if (title.equals("我的任务")) {
             handlePlayerTasksClick(player, clickedItem);
+        }
+    }
+
+    /**
+     * 处理拖拽事件，防止玩家拖拽任务GUI中的物品
+     */
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        
+        Player player = (Player) event.getWhoClicked();
+        String inventoryTitle = event.getView().getTitle();
+        
+        // 阻止在任务GUI中拖拽物品
+        if (inventoryTitle.equals("任务中心") || inventoryTitle.equals("我的任务")) {
+            // 完全阻止拖拽操作
+            event.setCancelled(true);
         }
     }
 
@@ -261,7 +288,12 @@ public class TaskGUI implements Listener {
         // 扣除费用
         if (plugin.getEconomyManager().withdraw(player, cost)) {
             // 生成随机任务
-            Task newTask = taskManager.generateRandomTask(player);
+            taskManager.assignNewTask(player);
+            player.sendMessage(ChatColor.GREEN + "成功生成新任务");
+            player.sendMessage(ChatColor.GRAY + "花费: " + plugin.getEconomyManager().format(cost));
+            player.closeInventory();
+            
+            /*
             if (newTask != null) {
                 player.sendMessage(ChatColor.GREEN + "成功生成新任务: " + newTask.getType().toString());
                 player.sendMessage(ChatColor.GRAY + "花费: " + plugin.getEconomyManager().format(cost));
@@ -271,6 +303,7 @@ public class TaskGUI implements Listener {
                 plugin.getEconomyManager().deposit(player, cost);
                 player.sendMessage(ChatColor.RED + "任务生成失败！");
             }
+            */
         } else {
             player.sendMessage(ChatColor.RED + "扣费失败！");
         }

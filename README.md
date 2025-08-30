@@ -5,141 +5,68 @@ VillagerPro 是一个 Minecraft 服务器插件，专注于村庄和村民的管
 
 ## 功能列表
 - **村庄管理**：创建、升级和扩展村庄。
-- **村民招募**：招募不同类型的村民（农民、守卫、商人等）。
+- **村民招募**：招募不同类型的村民（农民、渔夫、牧羊人等）。
+- **村民管理**：管理已招募村民的跟随模式、升级和产出。
 - **任务系统**：为玩家生成随机任务（采集、击杀、交付等），完成任务后获得奖励。
-- **经济系统**：支持金币和经验奖励。
+- **经济系统**：支持金币和经验奖励，兼容 Vault 和 PlayerPoints。
+- **作物系统**：村民自动收集作物并存储，玩家可以存取作物。
 - **事件监听**：自动检测任务进度（如采集物品、击杀怪物）。
 
 ## 安装指南
 1. 将插件 JAR 文件放入服务器的 `plugins` 文件夹。
-2. 重启服务器以加载插件。
-3. 插件会自动生成默认配置文件 `config.yml`。
+2. 确保已安装 Vault 插件（如果需要经济系统支持）。
+3. （可选）安装 PlayerPoints 插件（如果需要点券系统支持）。
+4. 重启服务器以加载插件。
+5. 插件会自动生成默认配置文件 `config.yml` 和 `messages.yml`。
 
-### config.yml
+## 配置文档
+### `config.yml`
 ```yaml
-# 村庄升级配置
-upgrades:
-  TRADE_AMOUNT:
-    cost-money: 100
-    cost-diamonds: 5
-    cost-items:
-      IRON_INGOT: 10
-  TRADE_QUALITY:
-    cost-money: 200
-    cost-diamonds: 10
-    cost-items:
-      GOLD_INGOT: 15
-  TRADE_PRICE:
-    cost-money: 150
-    cost-diamonds: 7
-    cost-items:
-      EMERALD: 5
-  RESTOCK_SPEED:
-    cost-money: 80
-    cost-diamonds: 3
-    cost-items:
-      WHEAT: 20
-  CROP_YIELD:
-    cost-money: 120
-    cost-diamonds: 6
-    cost-items:
-      SEEDS: 30
+# 村庄配置
+village:
+  # 村民数量上限
+  max_villagers: 10
+  # 村庄最大等级
+  max_level: 5
+  # 村庄升级费用（金币）
+  upgrade_cost: 1000
+  # 招募村民所需金币
+  recruit_cost: 500
+
+# 任务配置
+task:
+  # 任务生成费用（金币）
+  generate_cost: 100
+  # 默认任务奖励经验
+  reward_exp: 50
+  # 默认任务奖励金币
+  reward_money: 100
+
+# 作物系统配置
+crop:
+  # 农民村民收集作物的概率（0.0-1.0）
+  collection_probability: 0.3
+  # 每次收集的最大作物数量
+  max_collection_amount: 5
 ```
 
-## 命令帮助
-
-### 主命令
-#### `/villagerpro help [页码]`
-- 描述: 显示插件所有可用命令的帮助信息
-- 权限: 默认所有玩家
-
-#### `/villagerpro village create`
-- 描述: 创建一个新的村庄
-- 权限: `villagerpro.village.create` 或 `villagerpro.admin`
-
-#### `/villagerpro village upgrade <level>`
-- 描述: 升级村庄到指定等级
-- 参数: `<level>` - 要升级到的等级
-- 权限: `villagerpro.village.upgrade` 或 `villagerpro.admin`
-
-#### `/villagerpro village info`
-- 描述: 显示村庄详细信息
-- 权限: `villagerpro.village.info` 或 `villagerpro.admin`
-
-### 村民相关命令
-
-#### `/villager production`
-- 描述: 打开村民产出界面，可以获取村民生产的物品
-- 权限: `villagerpro.villager.production` 或 `villagerpro.admin`
-
-#### `/villager upgrade <type> <level>`
-- 描述: 升级村民能力
-- 参数: 
-  - `<type>` - 要升级的能力类型
-  - `<level>` - 要升级到的等级
-- 升级类型:
-  - `TRADE_AMOUNT` - 提高村民交易数量
-  - `TRADE_QUALITY` - 提高村民交易物品质量
-  - `TRADE_PRICE` - 提高村民交易价格
-  - `RESTOCK_SPEED` - 提高村民补货速度
-  - `CROP_YIELD` - 提高农民作物产量
-- 权限: `villagerpro.villager.upgrade` 或 `villagerpro.admin`
-
-#### `/villager follow [mode]`
-- 描述: 切换村民跟随模式
-- 模式:
-  - `free` - 自由活动
-  - `follow` - 跟随玩家
-  - `stay` - 停留原地
-- 权限: `villagerpro.villager.follow` 或 `villagerpro.admin`
-
-#### `/villager info`
-- 描述: 显示当前村民的详细信息，包括职业、技能等级等
-- 权限: `villagerpro.villager.info` 或 `villagerpro.admin`
-
-#### `/villager list`
-- 描述: 列出玩家所有村民
-- 权限: `villagerpro.villager.list` 或 `villagerpro.admin`
-
-#### `/villager remove <id>`
-- 描述: 移除指定ID的村民
-- 参数: `<id>` - 要移除的村民ID
-- 权限: `villagerpro.villager.remove` 或 `villagerpro.admin`
-
-### 村庄相关命令
-
-#### `/village create`
-- 描述: 创建一个新的村庄
-- 权限: `villagerpro.village.create` 或 `villagerpro.admin`
-
-#### `/village upgrade <level>`
-- 描述: 升级村庄到指定等级
-- 参数: `<level>` - 要升级到的等级
-- 权限: `villagerpro.village.upgrade` 或 `villagerpro.admin`
-
-#### `/village info`
-- 描述: 显示村庄详细信息
-- 权限: `villagerpro.village.info` 或 `villagerpro.admin`
-
-### 作物管理命令
-
-#### `/crop balance`
-- 描述: 查看玩家当前存储的作物数量
-- 权限: `villagerpro.crop.balance` 或 `villagerpro.admin`
-
-#### `/crop withdraw <type> [amount]`
-- 描述: 取出指定类型的作物
-- 参数: 
-  - `<type>` - 要取出的作物类型
-  - `[amount]` - 要取出的数量（可选）
-- 权限: `villagerpro.crop.withdraw` 或 `villagerpro.admin`
-
-#### `/crop deposit <type> [amount]`
-- 描述: 存储指定类型的作物
-- 参数:
-  - `<type>` - 要存储的作物类型
-  - `[amount]` - 要存储的数量（可选）
-- 权限: `villagerpro.crop.deposit` 或 `villagerpro.admin`
+## 命令列表
+| 命令 | 描述 | 权限 |
+|------|------|------|
+| `/village create` | 创建村庄 | `villagerpro.village.create` |
+| `/village upgrade` | 升级村庄 | `villagerpro.village.upgrade` |
+| `/village info` | 查看村庄信息 | `villagerpro.village.info` |
+| `/task` | 打开任务界面 | `villagerpro.task` |
+| `/villager recruit` | 招募村民 | `villagerpro.villager.recruit` |
+| `/villager production` | 打开村民产出界面 | `villagerpro.villager.production` |
+| `/villager upgrade` | 打开村民升级界面 | `villagerpro.villager.upgrade` |
+| `/villager follow` | 切换村民跟随模式 | `villagerpro.villager.follow` |
+| `/villager info` | 显示村民信息 | `villagerpro.villager.info` |
+| `/villager list` | 列出所有村民 | `villagerpro.villager.list` |
+| `/villager remove` | 移除村民 | `villagerpro.villager.remove` |
+| `/crop balance` | 查看作物余额 | `villagerpro.crop.balance` |
+| `/crop withdraw` | 取出作物 | `villagerpro.crop.withdraw` |
+| `/crop deposit` | 存储作物 | `villagerpro.crop.deposit` |
 
 ## 权限节点
 
@@ -148,24 +75,11 @@ upgrades:
 - `villagerpro.village.upgrade` - 允许升级村庄
 - `villagerpro.village.info` - 允许查看村庄信息
 
-### 经济系统支持
+### 任务权限
+- `villagerpro.task` - 允许使用任务系统
 
-VillagerPro 支持所有与 Vault 兼容的经济插件，包括但不限于:
-- EssentialsX Economy 
-- CMI Economy
-- TheNewEconomy
-- GemsEconomy
-- BOSEconomy
-- iConomy
-
-### CMI 经济系统配置
-
-如果您使用 CMI 经济系统，请确保:
-1. 安装了 Vault 插件
-2. 在 CMI 配置文件中启用了经济系统 (`Economy enabled: true`)
-3. (可选) 使用兼容 CMI 的 Vault 版本或 CMIInjector
-
-## 村民权限
+### 村民权限
+- `villagerpro.villager.recruit` - 允许招募村民
 - `villagerpro.villager.production` - 允许打开产出界面
 - `villagerpro.villager.upgrade` - 允许升级村民
 - `villagerpro.villager.follow` - 允许切换村民跟随模式
@@ -177,6 +91,29 @@ VillagerPro 支持所有与 Vault 兼容的经济插件，包括但不限于:
 - `villagerpro.crop.balance` - 允许查看作物余额
 - `villagerpro.crop.withdraw` - 允许取出作物
 - `villagerpro.crop.deposit` - 允许存储作物
+
+### 管理员权限
+- `villagerpro.admin` - 管理员权限，可绕过所有限制
+
+## 经济系统支持
+
+VillagerPro 支持多种经济插件，包括：
+- 所有与 Vault 兼容的经济插件（如 EssentialsX Economy、CMI Economy、TheNewEconomy 等）
+- PlayerPoints 点券系统
+
+### CMI 经济系统配置
+
+如果您使用 CMI 经济系统，请确保:
+1. 安装了 Vault 插件
+2. 在 CMI 配置文件中启用了经济系统 (`Economy enabled: true`)
+3. (可选) 使用兼容 CMI 的 Vault 版本或 CMIInjector
+
+### PlayerPoints 配置
+
+如果您使用 PlayerPoints 点券系统，请确保:
+1. 安装了 PlayerPoints 插件
+2. PlayerPoints 插件已正确配置并运行
+3. 玩家拥有足够的点券来执行相关操作
 
 ## 任务系统
 ### 任务类型
@@ -197,9 +134,10 @@ VillagerPro 支持所有与 Vault 兼容的经济插件，包括但不限于:
 15. **酿造任务**：酿造指定数量的药水。
 
 ### 任务流程
-1. 玩家使用 `/task generate` 生成随机任务。
-2. 完成任务目标后，系统自动发放奖励。
-3. 奖励包括经验和金币，可在配置文件中自定义。
+1. 玩家使用 `/task` 打开任务界面。
+2. 在任务中心界面中点击"生成随机任务"创建新任务，需要消耗100金币。
+3. 完成任务目标后，系统自动发放奖励。
+4. 奖励包括经验和金币。
 
 ## 村民招募系统
 ### 招募流程
@@ -228,4 +166,8 @@ VillagerPro 支持所有与 Vault 兼容的经济插件，包括但不限于:
    - 自由活动：村民自由行动
    - 跟随：村民跟随玩家
    - 停留：村民停留在当前位置
-3. 村民可以被升级以提高其技能等级。
+3. 使用 `/villager upgrade` 命令可以打开升级界面，提升村民的各项能力。
+4. 使用 `/villager production` 命令可以打开产出界面，获取村民生产的物品。
+5. 使用 `/villager info` 命令可以查看最近的村民信息。
+6. 使用 `/villager list` 命令可以列出所有已招募的村民。
+7. 使用 `/villager remove <ID>` 命令可以移除指定的村民。

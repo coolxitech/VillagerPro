@@ -1,17 +1,44 @@
 package cn.popcraft.villagepro.model;
 
-import cn.popcraft.villagepro.model.ProfessionSkill;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
-
-public class VillageUpgrade implements Serializable, Cloneable {
+public class VillageUpgrade {
     private static final long serialVersionUID = 1L;
     private UUID villageId;
     private Map<ProfessionSkill, Integer> skillLevels = new HashMap<>();
+    private int level;
+    private long lastUpgraded;
+    private boolean isUpgrading;
+    
+    public VillageUpgrade() {
+        this.level = 0;
+        this.lastUpgraded = 0;
+        this.isUpgrading = false;
+    }
+    
+    public int getLevel() {
+        return level;
+    }
+    
+    public void setLevel(int level) {
+        this.level = level;
+        this.lastUpgraded = System.currentTimeMillis();
+    }
+    
+    public long getLastUpgraded() {
+        return lastUpgraded;
+    }
+    
+    public boolean isUpgrading() {
+        return isUpgrading;
+    }
+    
+    public void setUpgrading(boolean upgrading) {
+        this.isUpgrading = upgrading;
+    }
 
     public UUID getVillageId() {
         return villageId;

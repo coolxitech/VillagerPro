@@ -1,59 +1,33 @@
 name: VillagePro
-version: '${version}'
+version: ${version}
 main: cn.popcraft.villagepro.VillagePro
 api-version: 1.19
-# 声明插件依赖关系
 depend: [Vault]
-# 可选依赖关系
-softdepend: [EssentialsX, CMI]
-
-# 插件网站
+softdepend: [PlayerPoints, CMI, Essentials]
+authors: [PopCraft]
+description: Advanced village and villager management plugin
 website: https://github.com/sweepikun/VillagerPro
-
-# 自定义记分板
-custom-scoreboard: true
 
 commands:
   villagepro:
     description: Main command for VillagePro
     usage: /<command> [help]
     aliases: [vpro]
-    permission: villagepro.*
-    children:
-      villagepro.village:
-        description: Village management commands
-        usage: /<command> [subcommand]
-        permission: villagepro.village.*
-        children:
-          villagepro.village.create:
-            description: Allows creating villages
-            usage: /<command> create
-          villagepro.village.upgrade:
-            description: Allows upgrading villages
-            usage: /<command> upgrade <level>
-          villagepro.village.info:
-            description: Allows viewing village information
-            usage: /<command> info
   villager:
     description: Villager management commands
     usage: /<command> [subcommand]
-    permission: villagepro.villager.*
-  recruit:
-    description: Recruit villagers
-    usage: /<command>
-    permission: villagepro.villager.recruit
-  upgrade:
-    description: Upgrade village capabilities
-    usage: /<command> [type]
-    permission: villagepro.village.upgrade
-  crop:
-    description: Manage crop storage
-    usage: /<command> [subcommand]
-    permission: villagepro.crop.*
   village:
     description: Village management commands
     usage: /<command> [subcommand]
-    permission: villagepro.village.*
+  recruit:
+    description: Recruit villagers
+    usage: /<command>
+  upgrade:
+    description: Upgrade village capabilities
+    usage: /<command> [type]
+  crop:
+    description: Manage crop storage
+    usage: /<command> [subcommand]
 
 permissions:
   villagepro.*:
@@ -94,26 +68,26 @@ permissions:
     description: Allows upgrading villages
     default: true
   villagepro.village.info:
-    description: Allows viewing village info
+    description: Allows viewing village information
     default: true
   villagepro.villager.production:
-    description: Allows opening production GUI
+    description: Allows viewing villager production
     default: true
   villagepro.villager.upgrade:
     description: Allows upgrading villagers
     default: true
   villagepro.villager.follow:
-    description: Allows switching villager follow mode
+    description: Allows making villagers follow
     default: true
   villagepro.villager.info:
-    description: Allows viewing villager info
+    description: Allows viewing villager information
     default: true
   villagepro.villager.list:
     description: Allows listing villagers
     default: true
   villagepro.villager.remove:
     description: Allows removing villagers
-    default: true
+    default: op
   villagepro.crop.balance:
     description: Allows checking crop balance
     default: true
@@ -123,8 +97,3 @@ permissions:
   villagepro.crop.deposit:
     description: Allows depositing crops
     default: true
-  villagepro.admin:
-    description: Gives access to all administrative commands
-    default: op
-    children:
-      villagepro.*: true

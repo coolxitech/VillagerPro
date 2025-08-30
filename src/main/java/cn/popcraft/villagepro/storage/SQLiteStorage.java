@@ -1,25 +1,35 @@
 package cn.popcraft.villagepro.storage;
 
 import cn.popcraft.villagepro.VillagePro;
-import org.bukkit.plugin.java.JavaPlugin;
+import cn.popcraft.villagepro.model.Village;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.configuration.Configuration;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
+import java.util.logging.Logger;
 
-public class SQLiteStorage {
-    private final JavaPlugin plugin;
+public abstract class SQLiteStorage {
+    private final Plugin plugin;
     private final Gson gson;
     private Connection connection;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final List<Class<?>> registeredTables = new ArrayList<>();
 
-    public SQLiteStorage(JavaPlugin plugin, Gson gson) {
+    public SQLiteStorage(Plugin plugin, Gson gson) {
         this.plugin = plugin;
         this.gson = gson;
-        initialize();
+        connect();
     }
 
     public void updateTaskProgress(UUID playerId, UUID taskId, int progress) {
@@ -56,128 +66,179 @@ public class SQLiteStorage {
         }
     }
 
-    private void initialize() {
+    private void connect() {
         try {
-            // 确保数据目录存在
-            if (!plugin.getDataFolder().exists()) {
-                plugin.getDataFolder().mkdirs();
-            }
+            Configuration config = plugin.getConfig();
+            String databasePath = config.getString("database.path", "plugins/VillagePro/data.db");
             
-            Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection("jdbc:sqlite:" + plugin.getDataFolder().getAbsolutePath() + "/data.db");
-            
-            // 为不同的数据模型创建表
-            createPlayerTasksTable();
-            createVillagesTable();
-            createCropStorageTable();
-        } catch (Exception e) {
-            plugin.getLogger().severe("数据库初始化失败: " + e.getMessage());
+            connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+            initializeTables();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("连接SQLite数据库失败: " + e.getMessage());
         }
     }
 
-    private void createPlayerTasksTable() throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.executeUpdate(
-                "CREATE TABLE IF NOT EXISTS player_tasks (" +
-                "player_uuid TEXT NOT NULL, " +
-                "task_id TEXT PRIMARY KEY, " +
-                "type TEXT NOT NULL, " +
-                "target_item TEXT, " +
-                "target_amount INTEGER, " +
-                "progress INTEGER DEFAULT 0, " +
-                "reward_exp INTEGER, " +
-                "reward_money REAL, " +
-                "description TEXT, " +
-                "completed INTEGER DEFAULT 0)"
-            );
-        }
-    }
-    
-    private void createVillagesTable() throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.executeUpdate(
-                "CREATE TABLE IF NOT EXISTS villages (" +
-                "owner_uuid TEXT PRIMARY KEY, " +
-                "data TEXT NOT NULL)"
-            );
-        }
-    }
-    
-    private void createCropStorageTable() throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.executeUpdate(
-                "CREATE TABLE IF NOT EXISTS crop_storage (" +
-                "player_uuid TEXT PRIMARY KEY, " +
-                "data TEXT NOT NULL)"
-            );
+    private void initializeTables() {
+        String sql = "CREATE TABLE IF NOT EXISTS villages ("
+                + "id TEXT PRIMARY KEY, "
+                + "ownerUuid TEXT, "
+                + "data TEXT)";
+        
+        try {
+            executeUpdate(sql);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("创建数据库表失败: " + e.getMessage());
         }
     }
 
-    private void createTable(Class<?> clazz) throws SQLException {
-        // 这里可以根据类名创建不同的表结构
-        String tableName = clazz.getSimpleName().toLowerCase();
-        try (Statement statement = connection.createStatement()) {
-            // 创建通用的键值存储表
-            statement.executeUpdate(
-                "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
-                "id TEXT PRIMARY KEY, " +
-                "data TEXT NOT NULL)"
-            );
+    public void save(Village village) {
+        String sql = "INSERT OR REPLACE INTO villages(id, ownerUuid, data) VALUES(?,?,?)";
+        
+        try {
+            String villageData = gson.toJson(village);
+            executeUpdate(sql, village.getOwnerUuid().toString(), village.getOwnerUuid().toString(), villageData);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("保存村庄数据失败: " + e.getMessage());
         }
     }
 
-    public <T> List<T> findAll(Class<T> clazz) {
-        List<T> results = new ArrayList<>();
-        String tableName = clazz.getSimpleName().toLowerCase();
+    public Collection<Village> findAll() {
+        String sql = "SELECT data FROM villages";
+        
         try (Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery("SELECT * FROM " + tableName)) {
+             ResultSet rs = statement.executeQuery(sql)) {
+            
+            Collection<Village> villages = new ArrayList<>();
             while (rs.next()) {
-                // 这里应该实现实际的反序列化逻辑
-                // 简化处理，返回空列表
+                String jsonData = rs.getString("data");
+                Village village = gson.fromJson(jsonData, Village.class);
+                villages.add(village);
+            }
+            return villages;
+        } catch (SQLException e) {
+            plugin.getLogger().severe("查找村庄数据失败: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+    
+    public <T> void save(T data, Function<T, String> idGenerator, String tableName) {
+        try {
+            String sql = "INSERT OR REPLACE INTO " + tableName + "(id, data) VALUES(?,?)";
+            String jsonData = gson.toJson(data);
+            executeUpdate(sql, idGenerator.apply(data), jsonData);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("保存数据失败: " + e.getMessage());
+        }
+    }
+    
+    public <T> Collection<T> findAll(Class<T> clazz, String tableName) {
+        String sql = "SELECT data FROM " + tableName;
+        
+        try (Statement statement = connection.createStatement();
+             ResultSet rs = statement.executeQuery(sql)) {
+            
+            Collection<T> dataList = new ArrayList<>();
+            while (rs.next()) {
+                String jsonData = rs.getString("data");
+                T data = gson.fromJson(jsonData, clazz);
+                dataList.add(data);
+            }
+            return dataList;
+        } catch (SQLException e) {
+            plugin.getLogger().severe("查找数据失败: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+    
+    public <T> void saveWithId(T data, String id, String tableName) {
+        try {
+            String sql = "INSERT OR REPLACE INTO " + tableName + "(id, data) VALUES(?,?)";
+            String jsonData = gson.toJson(data);
+            executeUpdate(sql, id, jsonData);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("保存数据失败: " + e.getMessage());
+        }
+    }
+    
+    public <T> T findById(Class<T> clazz, String id, String tableName) {
+        String sql = "SELECT data FROM " + tableName + " WHERE id = ?";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    String jsonData = rs.getString("data");
+                    return gson.fromJson(jsonData, clazz);
+                }
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("查询失败: " + e.getMessage());
+            plugin.getLogger().severe("查找数据失败: " + e.getMessage());
         }
-        return results;
+        return null;
     }
-
-    public <T> void save(T data) {
-        // 实现保存逻辑
-        // 简化版本，实际应该使用序列化
-        if (data == null) return;
+    
+    public void update(String tableName, String id, String column, Object value) {
+        String sql = "UPDATE " + tableName + " SET " + column + " = ? WHERE id = ?";
         
-        // 根据数据类型保存到对应的表
-        if (data.getClass().getSimpleName().equals("PlayerTaskData")) {
-            savePlayerTaskData((cn.popcraft.villagepro.model.PlayerTaskData) data);
-        } else if (data.getClass().getSimpleName().equals("Village")) {
-            saveVillage((cn.popcraft.villagepro.model.Village) data);
-        } else if (data.getClass().getSimpleName().equals("CropStorage")) {
-            saveCropStorage((cn.popcraft.villagepro.model.CropStorage) data);
+        try {
+            executeUpdate(sql, value, id);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("更新数据失败: " + e.getMessage());
         }
     }
     
-    private void savePlayerTaskData(cn.popcraft.villagepro.model.PlayerTaskData data) {
-        // 实现PlayerTaskData的保存逻辑
-        // 简化处理
+    public void delete(String tableName, String id) {
+        String sql = "DELETE FROM " + tableName + " WHERE id = ?";
+        
+        try {
+            executeUpdate(sql, id);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("删除数据失败: " + e.getMessage());
+        }
     }
     
-    private void saveVillage(cn.popcraft.villagepro.model.Village data) {
-        // 实现Village的保存逻辑
-        // 简化处理
+    private void executeUpdate(String sql, Object... params) throws SQLException {
+        Future<?> future = executor.submit(() -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                for (int i = 0; i < params.length; i++) {
+                    if (params[i] instanceof String) {
+                        pstmt.setString(i + 1, (String) params[i]);
+                    } else if (params[i] instanceof Integer) {
+                        pstmt.setInt(i + 1, (Integer) params[i]);
+                    } else if (params[i] instanceof Long) {
+                        pstmt.setLong(i + 1, (Long) params[i]);
+                    } else if (params[i] instanceof Double) {
+                        pstmt.setDouble(i + 1, (Double) params[i]);
+                    } else {
+                        pstmt.setString(i + 1, params[i].toString());
+                    }
+                }
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().severe("执行SQL更新失败: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+        
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new SQLException("执行异步操作失败", e);
+        }
     }
     
-    private void saveCropStorage(cn.popcraft.villagepro.model.CropStorage data) {
-        // 实现CropStorage的保存逻辑
-        // 简化处理
+    private <T> void createTable(Class<T> clazz) throws SQLException {
+        // 默认实现，子类可以覆盖
     }
-
+    
     public void close() {
         try {
-            if (connection != null) {
+            if (connection != null && !connection.isClosed()) {
                 connection.close();
             }
+            executor.shutdown();
         } catch (SQLException e) {
-            plugin.getLogger().severe("数据库关闭失败: " + e.getMessage());
+            plugin.getLogger().severe("关闭数据库连接失败: " + e.getMessage());
         }
     }
 }

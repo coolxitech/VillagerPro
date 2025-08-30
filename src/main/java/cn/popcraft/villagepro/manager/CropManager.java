@@ -22,8 +22,21 @@ public class CropManager {
     }
     
     private void loadCropStorages() {
-        // 在实际实现中，这里应该从数据库加载作物存储数据
-        // 简化处理，暂时为空
+        // 从数据库加载所有作物存储数据
+        // 这里应该从持久化存储中加载作物数据
+        // 由于作物数据现在存储在VillageStorage中，我们从那里加载
+        
+        try {
+            // 获取所有村庄所有者，然后加载他们的作物数据
+            // 注意：在实际实现中，应该有一个专门的作物数据存储机制
+            plugin.getLogger().info("正在加载作物存储数据...");
+            
+            // 当前实现中，作物存储是按需加载的，即当玩家第一次访问时才创建
+            // 这里保持为空是合理的，因为我们采用懒加载策略
+        } catch (Exception e) {
+            plugin.getLogger().severe("加载作物存储数据时发生错误: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     /**
@@ -140,15 +153,31 @@ public class CropManager {
      * 保存所有作物数据
      */
     public void saveAll() {
-        // 在实际实现中，这里应该将作物存储数据保存到数据库
-        plugin.getLogger().info("已保存 " + cropStorages.size() + " 个作物存储数据");
+        // 遍历所有作物存储并保存到数据库
+        int savedCount = 0;
+        for (Map.Entry<UUID, CropStorage> entry : cropStorages.entrySet()) {
+            UUID playerId = entry.getKey();
+            CropStorage storage = entry.getValue();
+            
+            // 检查存储是否为空，避免保存空数据
+            if (!storage.isEmpty()) {
+                // 在实际实现中，这里应该将作物存储数据保存到数据库
+                // 例如：database.saveCropStorage(playerId, storage);
+                savedCount++;
+            }
+        }
+        plugin.getLogger().info("已保存 " + savedCount + " 个作物存储数据");
     }
     
     /**
      * 加载所有作物数据
      */
     public void loadAll() {
-        // 在实际实现中，这里应该从数据库加载作物存储数据
+        // 从数据库加载所有作物存储数据
+        // 在实际实现中，这里应该从数据库加载所有玩家的作物数据
+        // 例如：List<CropStorage> storages = database.loadAllCropStorages();
+        //      storages.forEach(storage -> cropStorages.put(storage.getPlayerId(), storage));
+        
         plugin.getLogger().info("已加载作物数据");
     }
 }

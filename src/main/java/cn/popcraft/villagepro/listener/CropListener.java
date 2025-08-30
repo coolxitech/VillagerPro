@@ -121,13 +121,13 @@ public class CropListener implements Listener {
     private void collectCrops() {
         // 遍历所有村民实体
         for (VillagerEntity villagerEntity : plugin.getVillagerEntities().values()) {
-            Villager villager = villagerEntity.getVillager();
+            Villager villager = villagerEntity.getBukkitEntity();
             if (villager == null || !villager.isValid()) {
                 continue;
             }
             
             // 获取村民所有者
-            UUID ownerUuid = villagerEntity.getOwnerUuid();
+            UUID ownerUuid = villagerEntity.getOwnerId();
             if (ownerUuid == null) {
                 continue;
             }

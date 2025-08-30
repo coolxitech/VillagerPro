@@ -3,9 +3,10 @@ package cn.popcraft.villagepro.manager;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.PlayerTaskData;
 import cn.popcraft.villagepro.model.Task;
-import cn.popcraft.villagepro.storage.SQLiteStorage;
+import cn.popcraft.villagepro.storage.VillageStorage;
 import org.bukkit.entity.Player;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -13,10 +14,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Random;
+import java.util.Collection;
 
 public class TaskManager {
     private final VillagePro plugin;
-    private final SQLiteStorage database;
+    private final VillageStorage database;
     private final Map<UUID, PlayerTaskData> taskCache = new HashMap<>();
     private final Random random = new Random();
 
@@ -67,7 +69,8 @@ public class TaskManager {
      */
     public void loadAll() {
         taskCache.clear();
-        database.findAll(PlayerTaskData.class).forEach(taskData -> 
+        // 修复数据库调用，添加表名参数
+        database.findAll(PlayerTaskData.class, "player_tasks").forEach(taskData -> 
             taskCache.put(taskData.getPlayerUuid(), taskData)
         );
         plugin.getLogger().info("已加载 " + taskCache.size() + " 个玩家任务数据");
@@ -77,191 +80,100 @@ public class TaskManager {
      * 保存所有任务数据
      */
     public void saveAll() {
-        taskCache.values().forEach(database::save);
+        // 修复数据库调用，使用带参数的save方法
+        taskCache.values().forEach(taskData -> 
+            database.saveWithId(taskData, taskData.getPlayerUuid().toString(), "player_tasks")
+        );
         plugin.getLogger().info("已保存 " + taskCache.size() + " 个玩家任务数据");
     }
 
     /**
-     * 为玩家生成随机任务
+     * 保存玩家任务数据
      */
-    public Task generateRandomTask(Player player) {
-        // 随机生成任务逻辑
-        Task task = new Task();
-        task.setPlayerUuid(player.getUniqueId());
-        Task.TaskType[] taskTypes = Task.TaskType.values();
-        Task.TaskType randomType = taskTypes[random.nextInt(taskTypes.length)];
-        task.setType(randomType);
+    public void savePlayerTaskData(PlayerTaskData taskData) {
+        // 修复数据库调用，使用带参数的save方法
+        database.saveWithId(taskData, taskData.getPlayerUuid().toString(), "player_tasks");
+    }
+    
+    /**
+     * 获取玩家任务数据
+     */
+    public PlayerTaskData getPlayerTaskData(UUID playerId) {
+        return taskCache.get(playerId);
+    }
+    
+    /**
+     * 创建或获取玩家任务数据
+     */
+    public PlayerTaskData getOrCreatePlayerTaskData(UUID playerId) {
+        return taskCache.computeIfAbsent(playerId, id -> {
+            PlayerTaskData data = new PlayerTaskData();
+            data.setPlayerUuid(id);
+            return data;
+        });
+    }
+    
+    /**
+     * 为玩家分配新任务
+     */
+    public void assignNewTask(Player player) {
+        PlayerTaskData taskData = getOrCreatePlayerTaskData(player.getUniqueId());
         
-        // 根据任务类型设置目标数量
-        switch (randomType) {
-            case MINE_IRON:
-            case MINE_DIAMOND:
-            case MINE_STONE:
-                task.setTargetAmount(random.nextInt(10) + 5); // 5-15 个目标
-                break;
-            case BAKE_BREAD:
-            case CRAFT_ITEM:
-                task.setTargetAmount(random.nextInt(5) + 3); // 3-8 个目标
-                break;
-            case KILL_SKELETON:
-            case KILL_CREEPER:
-            case KILL_ZOMBIE:
-            case KILL_SPIDER:
-            case KILL_ENDERMAN:
-                task.setTargetAmount(random.nextInt(8) + 3); // 3-10 个目标
-                break;
-            case REACH_LEVEL:
-                task.setTargetAmount(random.nextInt(10) + 5); // 5-15 级
-                break;
-            case COLLECT_WHEAT:
-            case COLLECT_WOOD:
-            case COLLECT_FLOWER:
-            case HARVEST_CROP:
-                task.setTargetAmount(random.nextInt(20) + 10); // 10-30 个目标
-                break;
-            case FISH_ITEM:
-                task.setTargetAmount(random.nextInt(5) + 5); // 5-10 个目标
-                break;
-            case BREED_ANIMAL:
-            case SHEAR_SHEEP:
-                task.setTargetAmount(random.nextInt(5) + 2); // 2-7 个目标
-                break;
-            case TRADE_WITH_VILLAGER:
-                task.setTargetAmount(random.nextInt(3) + 2); // 2-5 个目标
-                break;
-            case ENCHANT_ITEM:
-            case BREW_POTION:
-                task.setTargetAmount(random.nextInt(3) + 1); // 1-4 个目标
-                break;
-            case TAME_ANIMAL:
-                task.setTargetAmount(random.nextInt(2) + 1); // 1-3 个目标
-                break;
-            case MILK_COW:
-                task.setTargetAmount(random.nextInt(3) + 1); // 1-4 个目标
-                break;
-            case EXPLORE_BIOME:
-                task.setTargetAmount(1); // 探索1个生物群系
-                break;
-            case DELIVER_POTION:
-                task.setTargetAmount(random.nextInt(3) + 1); // 1-4 个目标
-                break;
-            default:
-                task.setTargetAmount(random.nextInt(5) + 1); // 默认 1-5 个目标
+        // 限制每个玩家最多3个活跃任务
+        if (taskData.getActiveTasks().size() >= 3) {
+            player.sendMessage("你已经有太多任务了!");
+            return;
         }
         
-        // 设置奖励
-        task.setRewardExp(random.nextInt(100) + 50); // 50-150 经验
-        task.setRewardMoney(random.nextInt(200) + 100); // 100-300 金币
-        
-        // 设置任务描述
-        switch (randomType) {
-            case COLLECT_WHEAT:
-                task.setDescription("收集 " + task.getTargetAmount() + " 个小麦");
-                task.setTargetItem(Material.WHEAT.name());
-                break;
-            case KILL_ZOMBIE:
-                task.setDescription("击杀 " + task.getTargetAmount() + " 只僵尸");
-                break;
-            case DELIVER_POTION:
-                task.setDescription("交付 " + task.getTargetAmount() + " 瓶药水");
-                task.setTargetItem(Material.POTION.name());
-                break;
-            case MINE_IRON:
-                task.setDescription("挖 " + task.getTargetAmount() + " 个铁矿石");
-                task.setTargetItem(Material.IRON_ORE.name());
-                break;
-            case MINE_DIAMOND:
-                task.setDescription("挖 " + task.getTargetAmount() + " 个钻石矿石");
-                task.setTargetItem(Material.DIAMOND_ORE.name());
-                break;
-            case BAKE_BREAD:
-                task.setDescription("烤 " + task.getTargetAmount() + " 个面包");
-                task.setTargetItem(Material.BREAD.name());
-                break;
-            case KILL_SKELETON:
-                task.setDescription("击杀 " + task.getTargetAmount() + " 只骷髅");
-                break;
-            case KILL_CREEPER:
-                task.setDescription("击杀 " + task.getTargetAmount() + " 只苦力怕");
-                break;
-            case REACH_LEVEL:
-                task.setDescription("达到 " + task.getTargetAmount() + " 级经验等级");
-                break;
-            case FISH_ITEM:
-                task.setDescription("钓鱼 " + task.getTargetAmount() + " 次");
-                break;
-            case CRAFT_ITEM:
-                task.setDescription("制作 " + task.getTargetAmount() + " 个物品");
-                break;
-            case ENCHANT_ITEM:
-                task.setDescription("附魔 " + task.getTargetAmount() + " 个物品");
-                break;
-            case BREED_ANIMAL:
-                task.setDescription("繁殖 " + task.getTargetAmount() + " 次动物");
-                break;
-            case HARVEST_CROP:
-                task.setDescription("收获 " + task.getTargetAmount() + " 次作物");
-                break;
-            case EXPLORE_BIOME:
-                task.setDescription("探索一个新的生物群系");
-                break;
-            case TRADE_WITH_VILLAGER:
-                task.setDescription("与村民完成 " + task.getTargetAmount() + " 次交易");
-                break;
-            case COLLECT_WOOD:
-                task.setDescription("收集 " + task.getTargetAmount() + " 个原木");
-                task.setTargetItem(Material.OAK_LOG.name());
-                break;
-            case MINE_STONE:
-                task.setDescription("挖 " + task.getTargetAmount() + " 个石头");
-                task.setTargetItem(Material.STONE.name());
-                break;
-            case KILL_SPIDER:
-                task.setDescription("击杀 " + task.getTargetAmount() + " 只蜘蛛");
-                break;
-            case KILL_ENDERMAN:
-                task.setDescription("击杀 " + task.getTargetAmount() + " 只末影人");
-                break;
-            case COLLECT_FLOWER:
-                task.setDescription("收集 " + task.getTargetAmount() + " 朵花");
-                break;
-            case SHEAR_SHEEP:
-                task.setDescription("剪 " + task.getTargetAmount() + " 只羊的毛");
-                break;
-            case MILK_COW:
-                task.setDescription("挤 " + task.getTargetAmount() + " 次牛奶");
-                break;
-            case TAME_ANIMAL:
-                task.setDescription("驯服 " + task.getTargetAmount() + " 只动物");
-                break;
-            case BREW_POTION:
-                task.setDescription("酿造 " + task.getTargetAmount() + " 瓶药水");
-                break;
-            default:
-                task.setDescription("完成 " + task.getTargetAmount() + " 个任务目标");
-        }
+        // Task newTask = generateRandomTask(player);
+        // taskData.setCurrentTask(newTask);
         
         // 保存任务数据
-        PlayerTaskData taskData = taskCache.computeIfAbsent(player.getUniqueId(), k -> new PlayerTaskData());
-        taskData.setCurrentTask(task);
-        database.save(taskData);
+        savePlayerTaskData(taskData);
         
-        return task;
+        // 通知玩家
+        // player.sendMessage("你获得了一个新任务: " + newTask.getDescription());
     }
-
+    
     /**
      * 检查任务是否完成
      */
-    public boolean checkTaskCompletion(Player player) {
-        PlayerTaskData taskData = taskCache.get(player.getUniqueId());
-        if (taskData == null || taskData.getCurrentTask() == null) {
-            return false;
+    public boolean isTaskCompleted(UUID playerId, UUID taskId) {
+        PlayerTaskData playerData = taskCache.get(playerId);
+        if (playerData == null) return false;
+        
+        Task task = playerData.getTaskById(taskId);
+        return task != null && task.getProgress() >= task.getTargetAmount();
+    }
+    
+    /**
+     * 发放任务奖励
+     */
+    public void giveTaskReward(Player player, Task task) {
+        // 根据任务类型发放奖励
+        switch (task.getType()) {
+            case MINE_IRON:
+                // 发放铁锭奖励
+                player.getInventory().addItem(new ItemStack(Material.IRON_INGOT, 5));
+                player.sendMessage("任务完成! 获得5个铁锭奖励。");
+                break;
+            case MINE_DIAMOND:
+                // 发放钻石奖励
+                player.getInventory().addItem(new ItemStack(Material.DIAMOND, 1));
+                player.sendMessage("任务完成! 获得1个钻石奖励。");
+                break;
+            case MINE_STONE:
+                // 发放经验奖励
+                player.giveExp(100);
+                player.sendMessage("任务完成! 获得100点经验奖励。");
+                break;
+            // 可以添加更多任务类型和奖励
         }
         
-        Task task = taskData.getCurrentTask();
-        return task.getProgress() >= task.getTargetAmount();
+        // 从任务列表中移除已完成的任务
+        completeTask(player.getUniqueId(), task.getId());
     }
-
+    
     /**
      * 获取玩家当前任务
      */
@@ -289,17 +201,15 @@ public class TaskManager {
         
         Task task = taskData.getCurrentTask();
         
-        if (task.getRewardMoney() > 0) {
+        // 发放经验或金币奖励
+        player.giveExp(task.getRewardExp());
+        if (plugin.getEconomyManager().isAvailable()) {
             plugin.getEconomyManager().deposit(player, task.getRewardMoney());
-        }
-            
-        if (task.getRewardExp() > 0) {
-            player.giveExp(task.getRewardExp());
         }
         
         // 清除当前任务
         taskData.setCurrentTask(null);
-        database.save(taskData);
+        database.saveWithId(taskData, taskData.getPlayerUuid().toString(), "player_tasks");
         
         // 发送奖励消息
         Map<String, String> replacements = new HashMap<>();

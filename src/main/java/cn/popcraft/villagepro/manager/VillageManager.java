@@ -3,17 +3,16 @@ package cn.popcraft.villagepro.manager;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.UpgradeType;
 import cn.popcraft.villagepro.model.Village;
-import cn.popcraft.villagepro.model.VillageUpgrade;
 import cn.popcraft.villagepro.model.VillagerEntity;
-import cn.popcraft.villagepro.storage.SQLiteStorage;
+import cn.popcraft.villagepro.storage.VillageStorage;
 import cn.popcraft.villagepro.util.VillagerUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,41 +20,32 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.EnumMap;
-import java.util.Collections;
 import java.util.logging.Level;
 
 public class VillageManager {
     private final VillagePro plugin;
     private final Map<UUID, Village> villageCache = new ConcurrentHashMap<>();
-    private final SQLiteStorage villageStorage;
+    private final VillageStorage villageStorage;
     private final int maxVillagers; // 缓存配置值，避免每次查询
 
     public VillageManager(VillagePro plugin) {
         this.plugin = plugin;
-        this.villageStorage = new SQLiteStorage(plugin, plugin.getGson());
-        // 使用安全方式获取配置值，避免直接访问
-        this.maxVillagers = getMaxVillagersSafely();
+        this.villageStorage = new VillageStorage(plugin, plugin.getGson());
+        this.maxVillagers = plugin.getConfigManager().getMaxVillagers(); // 读取一次
     }
 
     /**
-     * 安全获取最大村民数量配置
-     * @return 配置的最大村民数量，如果配置不可用则返回默认值
+     * 关闭村庄管理器，保存所有数据并关闭数据库连接
      */
-    private int getMaxVillagersSafely() {
-        try {
-            if (plugin.getConfigManager() != null) {
-                return plugin.getConfigManager().getMaxVillagers();
-            }
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "无法获取最大村民数量配置", e);
+    public void close() {
+        saveAll();
+        if (villageStorage != null) {
+            villageStorage.close();
         }
-        // 返回一个合理的默认值
-        return 10; // 默认最大村民数
     }
 
     // ResourceCheckResult 内部类定义
@@ -66,34 +56,44 @@ public class VillageManager {
         Map<Material, Integer> items = new HashMap<>();
     }
     
-    public VillageUpgrade getVillageUpgrade(UUID playerUuid) {
-        Village village = villageCache.get(playerUuid);
-        if (village != null) {
-            // 返回一个新的VillageUpgrade实例，或者根据需要返回null
-            return new VillageUpgrade();
-        }
-        return null;
-    }
-
     /**
      * 加载所有村庄数据
      */
     public void loadAll() {
         villageCache.clear();
-        villageStorage.findAll(Village.class).forEach(village -> {
-            if (village != null && village.getOwnerUuid() != null) {
-                villageCache.put(village.getOwnerUuid(), village);
-            }
-        });
-        plugin.getLogger().info("已加载 " + villageCache.size() + " 个村庄数据");
+        try {
+            villageStorage.findAll().forEach(village -> {
+                if (village != null && village.getOwnerUuid() != null) {
+                    villageCache.put(village.getOwnerUuid(), village);
+                }
+            });
+            plugin.getLogger().info("已加载 " + villageCache.size() + " 个村庄数据");
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to load villages", e);
+        }
     }
 
     /**
      * 保存所有村庄数据
      */
     public void saveAll() {
-        villageCache.values().forEach(village -> villageStorage.save(village));
-        plugin.getLogger().info("已保存 " + villageCache.size() + " 个村庄数据");
+        // 检查插件是否启用
+        if (!plugin.isEnabled()) {
+            plugin.getLogger().warning("插件已禁用，跳过保存村庄数据");
+            return;
+        }
+        
+        BukkitScheduler scheduler = Bukkit.getScheduler();
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            try {
+                for (Village village : villageCache.values()) {
+                    villageStorage.save(village);
+                }
+                plugin.getLogger().info("已保存 " + villageCache.size() + " 个村庄数据");
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "Failed to save villages", e);
+            }
+        });
     }
 
     /**
@@ -118,7 +118,13 @@ public class VillageManager {
             }
             v.setVillagerIds(new ArrayList<>());
             // 异步保存，防止阻塞主线程
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> villageStorage.save(v));
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                try {
+                    villageStorage.save(v);
+                } catch (SQLException e) {
+                    plugin.getLogger().log(Level.SEVERE, "Failed to save village for player: " + v.getOwnerUuid(), e);
+                }
+            });
             return v;
         });
     }
@@ -128,16 +134,14 @@ public class VillageManager {
      */
     public void saveVillage(Village village) {
         if (village != null) {
-            villageStorage.save(village);
-        }
-    }
-
-    /**
-     * 保存所有村庄数据
-     */
-    public void saveAllVillages() {
-        for (Village village : villageCache.values()) {
-            saveVillage(village);
+            BukkitScheduler scheduler = Bukkit.getScheduler();
+            scheduler.runTaskAsynchronously(plugin, () -> {
+                try {
+                    villageStorage.save(village);
+                } catch (SQLException e) {
+                    plugin.getLogger().log(Level.SEVERE, "Failed to save village", e);
+                }
+            });
         }
     }
     
@@ -179,13 +183,10 @@ public class VillageManager {
             player.sendMessage(plugin.getMessageManager().getMessage("villager.already-recruited"));
             return false;
         }
-        
         // 2️⃣ 获取或创建村庄（线程安全）
         Village village = getOrCreateVillage(player);
-        
         // 3️⃣ 最大数量检查（延迟获取配置值）
-        int max = plugin.getConfigManager().getMaxVillagers();
-        if (village.getVillagerIds().size() >= max) {
+        if (village.getVillagerIds().size() >= getMaxVillagers()) {
             player.sendMessage(plugin.getMessageManager().getMessage("villager.max-villagers-reached"));
             return false;
         }
@@ -323,18 +324,9 @@ public class VillageManager {
 
         // 获取下一级升级配置
         int nextLevel = currentLevel + 1;
-        
-        // 安全访问ConfigManager
-        if (plugin.getConfigManager() == null) {
-            plugin.getLogger().severe("ConfigManager is null when trying to upgrade village");
-            player.sendMessage(plugin.getMessageManager().getMessage("upgrade.failed"));
-            return false;
-        }
-        
         cn.popcraft.villagepro.model.Upgrade upgrade = plugin.getConfigManager().getUpgrade(type, nextLevel);
-        
+
         if (upgrade == null) {
-            plugin.getLogger().warning("Upgrade configuration not found for type: " + type + ", level: " + nextLevel);
             player.sendMessage(plugin.getMessageManager().getMessage("upgrade.failed"));
             return false;
         }
@@ -379,9 +371,17 @@ public class VillageManager {
         }
 
         // 检查钻石
-        int costDiamonds = upgrade.getCostDiamonds();
+        int costDiamonds = (int) upgrade.getCostDiamonds();
         if (costDiamonds > 0) {
             if (!player.getInventory().containsAtLeast(new ItemStack(Material.DIAMOND), costDiamonds)) {
+                return false;
+            }
+        }
+        
+        // 检查点券
+        int costPoints = upgrade.getCostPoints();
+        if (costPoints > 0 && plugin.getEconomyManager().isPlayerPointsAvailable()) {
+            if (!plugin.getEconomyManager().hasPoints(player, costPoints)) {
                 return false;
             }
         }
@@ -417,9 +417,16 @@ public class VillageManager {
         }
 
         // 扣除钻石
-        int costDiamonds = upgrade.getCostDiamonds();
+        int costDiamonds = (int) upgrade.getCostDiamonds();
         if (costDiamonds > 0) {
             player.getInventory().removeItem(new ItemStack(Material.DIAMOND, costDiamonds));
+        }
+        
+        // 扣除点券
+        int costPoints = upgrade.getCostPoints();
+        if (costPoints > 0 && plugin.getEconomyManager().isPlayerPointsAvailable()) {
+            plugin.getEconomyManager().withdrawPoints(player, costPoints);
+            plugin.getLogger().info("从玩家 " + player.getName() + " 扣除了 " + costPoints + " 点券");
         }
 
         // 扣除物品
@@ -465,5 +472,30 @@ public class VillageManager {
         }
         player.sendMessage(plugin.getMessageManager().getMessage("villager.removed"));
         return true;
+    }
+
+    /**
+     * 获取最大村民数量配置值
+     * @return 最大村民数量
+     */
+    public int getMaxVillagers() {
+        // 实时获取配置值，确保获取最新配置
+        if (plugin.getConfigManager() != null) {
+            return plugin.getConfigManager().getMaxVillagers();
+        }
+        return maxVillagers; // 返回默认值
+    }
+
+    /**
+     * 检查玩家是否达到最大村民数量限制
+     * @param player 玩家
+     * @return 是否达到限制
+     */
+    public boolean isVillagerLimitReached(Player player) {
+        Village village = getVillage(player.getUniqueId());
+        if (village == null) {
+            return false;
+        }
+        return village.getVillagerIds().size() >= getMaxVillagers();
     }
 }

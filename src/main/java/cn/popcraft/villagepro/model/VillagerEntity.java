@@ -1,93 +1,88 @@
 package cn.popcraft.villagepro.model;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Villager;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
-import org.bukkit.World;
-import org.bukkit.util.Vector;
-
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.NamespacedKey;
+import cn.popcraft.villagepro.VillagePro;
+import cn.popcraft.villagepro.util.VillagerUtils;
 import java.util.UUID;
 
 public class VillagerEntity {
-    private final Villager villager;
-    private final UUID ownerUuid;
-    private FollowMode followMode;
-    private VillagerProfession profession; // 添加职业字段
+    private final UUID villagerId;
+    private final UUID ownerId;
+    private long lastInteractionTime;
+    private boolean isWorking;
+    private Villager bukkitEntity;
+    private FollowMode followMode = FollowMode.STAY; // 默认跟随模式
 
-    public VillagerEntity(Villager villager, UUID ownerUuid) {
-        this.villager = villager;
-        this.ownerUuid = ownerUuid;
-        this.followMode = FollowMode.NONE;
-        this.profession = VillagerProfession.fromBukkit(villager.getProfession()); // 初始化职业
+    public VillagerEntity(Villager villager, UUID ownerId) {
+        this.villagerId = villager.getUniqueId();
+        this.ownerId = ownerId;
+        this.bukkitEntity = villager;
+        this.lastInteractionTime = System.currentTimeMillis();
+        this.isWorking = false;
+        
+        // 保存所有者ID到村民的持久化数据中
+        saveOwnerToPersistentData(villager);
     }
 
-    public Villager getBukkitEntity() {
-        return villager;
+    public UUID getVillagerId() {
+        return villagerId;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public long getLastInteractionTime() {
+        return lastInteractionTime;
+    }
+
+    public void setLastInteractionTime(long lastInteractionTime) {
+        this.lastInteractionTime = lastInteractionTime;
+    }
+
+    public boolean isWorking() {
+        return isWorking;
+    }
+
+    public void setWorking(boolean working) {
+        isWorking = working;
     }
     
-    public Villager getVillager() {
-        return villager;
+    public Villager getBukkitEntity() {
+        return bukkitEntity;
     }
-
-    public UUID getOwnerUuid() {
-        return ownerUuid;
+    
+    public void setBukkitEntity(Villager bukkitEntity) {
+        this.bukkitEntity = bukkitEntity;
     }
-
+    
     public FollowMode getFollowMode() {
         return followMode;
     }
-
+    
     public void setFollowMode(FollowMode followMode) {
         this.followMode = followMode;
     }
     
-    public VillagerProfession getProfession() {
-        return profession;
-    }
-    
-    public void setProfession(VillagerProfession profession) {
-        this.profession = profession;
-    }
-    
-    /**
-     * 更新村民位置（跟随玩家）
-     */
     public void updateLocation() {
-        if (villager == null || !villager.isValid() || followMode != FollowMode.FOLLOW) {
-            return;
+        // 更新位置的逻辑可以在这里实现
+        // 当前为空实现，后续可根据需要添加
+    }
+
+    public static VillagerEntity fromEntity(Villager villager) {
+        UUID ownerId = VillagerUtils.getOwner(villager);
+        if (ownerId == null) {
+            return null;
         }
-        
-        Player owner = null;
-        // 使用 Bukkit.getPlayer 方法获取玩家
-        if (ownerUuid != null) {
-            owner = Bukkit.getPlayer(ownerUuid);
-        }
-        
-        if (owner == null || !owner.isOnline()) {
-            return;
-        }
-        
-        Location villagerLocation = villager.getLocation();
-        Location ownerLocation = owner.getLocation();
-        
-        // 计算距离
-        double distance = villagerLocation.distance(ownerLocation);
-        
-        // 如果距离太远，则传送村民到玩家附近
-        if (distance > 16) {
-            Location teleportLocation = ownerLocation.clone();
-            teleportLocation.add(2, 0, 2);
-            World ownerWorld = owner.getWorld();
-            if (ownerWorld != null && ownerWorld.getNearbyEntities(teleportLocation, 1, 1, 1).isEmpty()) {
-                villager.teleport(teleportLocation);
-            }
-        }
-        // 如果距离适中，则让村民走向玩家
-        else if (distance > 3) {
-            Vector direction = ownerLocation.toVector().subtract(villagerLocation.toVector()).normalize();
-            direction.multiply(0.3); // 控制移动速度
-            villager.setVelocity(direction);
-        }
+        return new VillagerEntity(villager, ownerId);
+    }
+    
+    private void saveOwnerToPersistentData(Villager villager) {
+        PersistentDataContainer data = villager.getPersistentDataContainer();
+        NamespacedKey key = new NamespacedKey(VillagePro.getInstance(), "villager_owner");
+        data.set(key, PersistentDataType.STRING, ownerId.toString());
     }
 }

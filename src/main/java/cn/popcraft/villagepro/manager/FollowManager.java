@@ -83,7 +83,7 @@ public class FollowManager {
             return true;
         }
         
-        Villager villager = villagerEntity.getVillager();
+        Villager villager = villagerEntity.getBukkitEntity();
         
         if (response.equalsIgnoreCase("y")) {
             setFollowMode(villager, FollowMode.FOLLOW);
@@ -105,8 +105,8 @@ public class FollowManager {
             public void run() {
                 for (VillagerEntity villagerEntity : plugin.getVillagerEntities().values()) {
                     if (villagerEntity.getFollowMode() == FollowMode.FOLLOW) {
-                        Villager villager = villagerEntity.getVillager();
-                        UUID ownerUuid = villagerEntity.getOwnerUuid();
+                        Villager villager = villagerEntity.getBukkitEntity();
+                        UUID ownerUuid = villagerEntity.getOwnerId();
                         Player owner = plugin.getServer().getPlayer(ownerUuid);
                         
                         if (owner != null && owner.isOnline() && villager.isValid()) {

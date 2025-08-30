@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Material;
@@ -35,28 +36,45 @@ public class GUIListener implements Listener {
         
         String inventoryTitle = event.getView().getTitle();
         
-        // 检查是否是升级GUI
-        if (inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.upgrade-title"))) {
-            event.setCancelled(true);
-            handleUpgradeGUI(player, clickedItem, event.getRawSlot());
-        }
-        // 检查是否是产出GUI
-        else if (inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.production-title", java.util.Map.of()))) {
-            event.setCancelled(true);
-            handleProductionGUI(player, clickedItem, event.getRawSlot());
-        }
-        // 检查是否是职业产出GUI
-        else if (inventoryTitle.contains(plugin.getMessageManager().getMessage("gui.profession-production-title", java.util.Map.of("profession", "")))) {
-            event.setCancelled(true);
-            handleProfessionProductionGUI(player, clickedItem, event.getRawSlot(), event.isRightClick());
-        }
+        // 检查是否是自定义GUI
+        boolean isCustomGUI = inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.upgrade-title")) ||
+                             inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.production-title", java.util.Map.of())) ||
+                             inventoryTitle.contains(plugin.getMessageManager().getMessage("gui.profession-production-title", java.util.Map.of("profession", "")));
         
-        // 阻止玩家从任何自定义GUI中取出物品
-        if (event.getClickedInventory() != player.getInventory() && 
-            (inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.upgrade-title")) ||
-             inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.production-title", java.util.Map.of())) ||
-             inventoryTitle.contains(plugin.getMessageManager().getMessage("gui.profession-production-title", java.util.Map.of("profession", ""))))) {
-            // 完全阻止任何物品移动操作
+        // 如果是自定义GUI，完全阻止所有操作
+        if (isCustomGUI) {
+            // 完全阻止任何物品移动操作，包括Shift+点击、双击、拖拽等
+            event.setCancelled(true);
+            event.setResult(org.bukkit.event.Event.Result.DENY);
+            
+            // 处理具体点击事件
+            if (inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.upgrade-title"))) {
+                handleUpgradeGUI(player, clickedItem, event.getRawSlot());
+            }
+            // 检查是否是产出GUI
+            else if (inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.production-title", java.util.Map.of()))) {
+                handleProductionGUI(player, clickedItem, event.getRawSlot());
+            }
+            // 检查是否是职业产出GUI
+            else if (inventoryTitle.contains(plugin.getMessageManager().getMessage("gui.profession-production-title", java.util.Map.of("profession", "")))) {
+                handleProfessionProductionGUI(player, clickedItem, event.getRawSlot(), event.isRightClick());
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        
+        Player player = (Player) event.getWhoClicked();
+        String inventoryTitle = event.getView().getTitle();
+        
+        // 阻止在自定义GUI中拖拽物品
+        if (inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.upgrade-title")) ||
+            inventoryTitle.equals(plugin.getMessageManager().getMessage("gui.production-title", java.util.Map.of())) ||
+            inventoryTitle.contains(plugin.getMessageManager().getMessage("gui.profession-production-title", java.util.Map.of("profession", "")))) {
+            
+            // 完全阻止拖拽操作
             event.setCancelled(true);
         }
     }

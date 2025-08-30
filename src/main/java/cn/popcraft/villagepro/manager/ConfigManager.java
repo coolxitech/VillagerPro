@@ -70,6 +70,7 @@ public class ConfigManager {
                                 upgrade.setLevel(level);
                                 upgrade.setCostMoney(upgradeSection.getDouble("cost-money", 0));
                                 upgrade.setCostDiamonds(upgradeSection.getInt("cost-diamonds", 0));
+                                upgrade.setCostPoints(upgradeSection.getInt("cost-points", 0)); // 添加点券成本读取
                                 
                                 // 加载升级所需物品
                                 Map<String, Integer> costItems = new HashMap<>();

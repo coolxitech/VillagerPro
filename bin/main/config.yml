@@ -6,23 +6,27 @@ upgrades:
     1:
       cost-money: 1000
       cost-diamonds: 0
+      cost-points: 0
       cost-items:
         EMERALD: 10
     2:
       cost-money: 2000
       cost-diamonds: 0
+      cost-points: 100
       cost-items:
         EMERALD: 20
         GOLD_INGOT: 5
     3:
       cost-money: 3000
       cost-diamonds: 1
+      cost-points: 200
       cost-items:
         EMERALD: 30
         GOLD_INGOT: 10
     4:
       cost-money: 4000
       cost-diamonds: 2
+      cost-points: 300
       cost-items:
         EMERALD: 40
         GOLD_INGOT: 15
@@ -30,6 +34,7 @@ upgrades:
     5:
       cost-money: 5000
       cost-diamonds: 3
+      cost-points: 500
       cost-items:
         EMERALD: 50
         GOLD_INGOT: 20
@@ -38,23 +43,27 @@ upgrades:
     1:
       cost-money: 1000
       cost-diamonds: 0
+      cost-points: 0
       cost-items:
         GOLDEN_APPLE: 5
     2:
       cost-money: 2000
       cost-diamonds: 0
+      cost-points: 100
       cost-items:
         GOLDEN_APPLE: 10
         GLISTERING_MELON_SLICE: 5
     3:
       cost-money: 3000
       cost-diamonds: 1
+      cost-points: 200
       cost-items:
         GOLDEN_APPLE: 15
         GLISTERING_MELON_SLICE: 10
     4:
       cost-money: 4000
       cost-diamonds: 2
+      cost-points: 300
       cost-items:
         GOLDEN_APPLE: 20
         GLISTERING_MELON_SLICE: 15
@@ -62,6 +71,7 @@ upgrades:
     5:
       cost-money: 5000
       cost-diamonds: 3
+      cost-points: 500
       cost-items:
         GOLDEN_APPLE: 25
         GLISTERING_MELON_SLICE: 20
@@ -70,23 +80,27 @@ upgrades:
     1:
       cost-money: 1000
       cost-diamonds: 0
+      cost-points: 0
       cost-items:
         SUGAR: 20
     2:
       cost-money: 2000
       cost-diamonds: 0
+      cost-points: 100
       cost-items:
         SUGAR: 40
         RABBIT_FOOT: 2
     3:
       cost-money: 3000
       cost-diamonds: 1
+      cost-points: 200
       cost-items:
         SUGAR: 60
         RABBIT_FOOT: 4
     4:
       cost-money: 4000
       cost-diamonds: 2
+      cost-points: 300
       cost-items:
         SUGAR: 80
         RABBIT_FOOT: 6
@@ -94,6 +108,7 @@ upgrades:
     5:
       cost-money: 5000
       cost-diamonds: 3
+      cost-points: 500
       cost-items:
         SUGAR: 100
         RABBIT_FOOT: 8

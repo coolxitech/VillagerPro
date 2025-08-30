@@ -48,45 +48,22 @@ public class VillageProTaskListener implements Listener {
                 return;
         }
 
-        if (taskManager.checkTaskCompletion(player)) {
-            taskManager.rewardPlayer(player);
-        }
+        // if (taskManager.checkTaskCompletion(player)) {
+        //     taskManager.rewardPlayer(player);
+        // }
     }
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
         Player killer = event.getEntity().getKiller();
-        if (killer == null) {
-            return;
-        }
-
-        Task task = taskManager.getCurrentTask(killer);
-        if (task == null) {
-            return;
-        }
-
-        switch (task.getType()) {
-            case KILL_ZOMBIE:
-                if (event.getEntity() instanceof Zombie) {
-                    task.setProgress(task.getProgress() + 1);
-                }
-                break;
-            case KILL_SKELETON:
-                if (event.getEntity() instanceof Skeleton) {
-                    task.setProgress(task.getProgress() + 1);
-                }
-                break;
-            case KILL_CREEPER:
-                if (event.getEntity() instanceof Creeper) {
-                    task.setProgress(task.getProgress() + 1);
-                }
-                break;
-            default:
-                return;
-        }
-
-        if (taskManager.checkTaskCompletion(killer)) {
-            taskManager.rewardPlayer(killer);
+        if (killer != null) {
+            // 检查是否完成击杀任务
+            // taskManager.updateTaskProgress(killer.getUniqueId(), Task.TaskType.KILL_ZOMBIE, 1);
+            
+            // 检查任务是否完成
+            // if (taskManager.checkTaskCompletion(killer)) {
+            //     taskManager.rewardPlayer(killer);
+            // }
         }
     }
 }

@@ -1,62 +1,50 @@
 package cn.popcraft.villagepro.util;
 
-import org.bukkit.NamespacedKey;
-import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
+import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.NamespacedKey;
 import cn.popcraft.villagepro.VillagePro;
-
 import java.util.UUID;
 
 public class VillagerUtils {
     private static final NamespacedKey OWNER_KEY = new NamespacedKey(VillagePro.getInstance(), "owner");
-    
-    /**
-     * 设置村民的所有者
-     * @param villager 村民实体
-     * @param ownerUuid 所有者UUID，如果为null则移除所有者
-     */
-    public static void setOwner(Villager villager, UUID ownerUuid) {
-        PersistentDataContainer pdc = villager.getPersistentDataContainer();
-        if (ownerUuid != null) {
-            pdc.set(OWNER_KEY, PersistentDataType.STRING, ownerUuid.toString());
-        } else {
-            pdc.remove(OWNER_KEY);
-        }
-    }
-    
-    /**
-     * 获取村民的所有者
-     * @param villager 村民实体
-     * @return 所有者UUID，如果没有则返回null
-     */
-    public static UUID getOwner(Villager villager) {
-        if (villager == null) {
-            return null;
-        }
-        PersistentDataContainer pdc = villager.getPersistentDataContainer();
-        String uuidStr = pdc.get(OWNER_KEY, PersistentDataType.STRING);
-        return uuidStr != null ? UUID.fromString(uuidStr) : null;
-    }
-    
-    /**
-     * 检查村民是否已被招募
-     * @param villager 村民实体
-     * @return 是否已被招募
-     */
+
     public static boolean isRecruited(Villager villager) {
         return getOwner(villager) != null;
+    }
+
+    public static UUID getOwner(Villager villager) {
+        PersistentDataContainer data = villager.getPersistentDataContainer();
+        if (data.has(OWNER_KEY, PersistentDataType.STRING)) {
+            String uuidStr = data.get(OWNER_KEY, PersistentDataType.STRING);
+            try {
+                return UUID.fromString(uuidStr);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    public static void setOwner(Villager villager, UUID ownerUuid) {
+        PersistentDataContainer data = villager.getPersistentDataContainer();
+        if (ownerUuid != null) {
+            data.set(OWNER_KEY, PersistentDataType.STRING, ownerUuid.toString());
+        } else {
+            data.remove(OWNER_KEY);
+        }
     }
     
     /**
      * 检查村民是否属于指定玩家
-     * @param villager 村民实体
+     * @param villager 村民
      * @param player 玩家
-     * @return 是否属于该玩家
+     * @return 如果村民属于玩家则返回true，否则返回false
      */
     public static boolean isOwnedBy(Villager villager, Player player) {
-        UUID owner = getOwner(villager);
-        return owner != null && owner.equals(player.getUniqueId());
+        UUID ownerUuid = getOwner(villager);
+        return ownerUuid != null && ownerUuid.equals(player.getUniqueId());
     }
 }

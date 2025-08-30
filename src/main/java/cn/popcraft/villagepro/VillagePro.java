@@ -7,12 +7,11 @@ import cn.popcraft.villagepro.gui.UpgradeGUI;
 import cn.popcraft.villagepro.listener.*;
 import cn.popcraft.villagepro.manager.*;
 import cn.popcraft.villagepro.model.VillagerEntity;
-import cn.popcraft.villagepro.storage.SQLiteStorage;
+import cn.popcraft.villagepro.storage.VillageStorage;
 import cn.popcraft.villagepro.util.VillagerUtils;
 import com.google.gson.Gson;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.entity.Villager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -43,7 +42,7 @@ public final class VillagePro extends JavaPlugin {
     private TaskGUI taskGUI;
     
     // Storage
-    private SQLiteStorage sqliteStorage;
+    private VillageStorage villageStorage;
     
     // Economy
     private Economy economy = null;
@@ -61,13 +60,11 @@ public final class VillagePro extends JavaPlugin {
         saveDefaultConfig();
         
         // 初始化存储
-        sqliteStorage = new SQLiteStorage(this, gson);
+        villageStorage = new VillageStorage(this, gson);
         
-        // 初始化配置管理器
-        this.configManager = new ConfigManager(this);
-        
-        // 初始化消息管理器
-        this.messageManager = new MessageManager(this);
+        // 按正确的顺序初始化管理器
+        this.configManager = new ConfigManager(this); // ConfigManager必须在使用配置的管理器之前初始化
+        this.messageManager = new MessageManager(this); // MessageManager依赖ConfigManager
         
         // 初始化其他管理器
         this.villageManager = new VillageManager(this);
@@ -92,11 +89,11 @@ public final class VillagePro extends JavaPlugin {
         this.taskGUI = new TaskGUI(this, taskManager);
         
         // 注册命令
-        registerCommandIfPresent("villager", new VillagerCommand(this));
-        registerCommandIfPresent("village", new VillageCommand(this));
-        registerCommandIfPresent("crop", new CropCommand(this));
-        registerCommandIfPresent("recruit", new RecruitCommand(this));
-        registerCommandIfPresent("upgrade", new UpgradeCommand(this));
+        this.getCommand("villager").setExecutor(new VillagerCommand(this));
+        this.getCommand("village").setExecutor(new VillageCommand(this));
+        this.getCommand("crop").setExecutor(new CropCommand(this));
+        this.getCommand("recruit").setExecutor(new RecruitCommand(this));
+        this.getCommand("upgrade").setExecutor(new UpgradeCommand(this));
         
         // 注册事件监听器
         Bukkit.getPluginManager().registerEvents(new VillagerListener(this), this);
@@ -116,7 +113,7 @@ public final class VillagePro extends JavaPlugin {
     public void onDisable() {
         // 清理村民实体
         for (VillagerEntity villagerEntity : villagerEntities.values()) {
-            Villager villager = villagerEntity.getBukkitEntity();
+            org.bukkit.entity.Villager villager = villagerEntity.getBukkitEntity();
             if (villager != null) {
                 // 清除自定义名称和所有者信息
                 villager.setCustomName(null);
@@ -125,15 +122,13 @@ public final class VillagePro extends JavaPlugin {
             }
         }
         
-        // 保存所有数据
+        // 保存并关闭所有数据管理器
         if (villageManager != null) {
-            villageManager.saveAll();
+            villageManager.close();
         }
-        if (taskManager != null) {
-            taskManager.saveAll();
-        }
+        
         if (cropManager != null) {
-            cropManager.saveAll();
+            cropManager.close();
         }
         
         getLogger().info("VillagePro 已禁用!");
@@ -191,13 +186,18 @@ public final class VillagePro extends JavaPlugin {
     }
     
     // 获取存储
-    public SQLiteStorage getDatabase() {
-        return sqliteStorage;
+    public VillageStorage getDatabase() {
+        return villageStorage;
     }
     
     // 获取村民实体映射
     public Map<UUID, VillagerEntity> getVillagerEntities() {
         return villagerEntities;
+    }
+    
+    // 获取经济管理器
+    public EconomyManager getEconomyManager() {
+        return economyManager;
     }
     
     // 获取Gson实例
@@ -214,7 +214,7 @@ public final class VillagePro extends JavaPlugin {
     private void startVillagerFollowTask() {
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             for (VillagerEntity villagerEntity : villagerEntities.values()) {
-                Villager villager = villagerEntity.getBukkitEntity();
+                org.bukkit.entity.Villager villager = villagerEntity.getBukkitEntity();
                 if (villager != null && villager.isValid()) {
                     villagerEntity.updateLocation();
                 }
@@ -236,18 +236,5 @@ public final class VillagePro extends JavaPlugin {
             
             getLogger().info("自动保存所有数据完成");
         }, 6000L, 6000L); // 每5分钟保存一次 (6000 ticks = 5 minutes)
-    }
-
-    /**
-     * 注册命令，如果命令在plugin.yml中定义
-     * @param commandName 命令名称
-     * @param executor 命令执行器
-     */
-    private void registerCommandIfPresent(String commandName, CommandExecutor executor) {
-        try {
-            this.getCommand(commandName).setExecutor(executor);
-        } catch (Exception e) {
-            this.getLogger().severe("无法注册命令 /" + commandName + ": 该命令未在plugin.yml中定义");
-        }
     }
 }

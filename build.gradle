@@ -2,8 +2,9 @@ plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
+
 group = 'cn.popcraft'
-version = '1.1.14-SNAPSHOT'
+version = '1.1.20-SNAPSHOT'
 description = 'Spigot Plugin'
 
 repositories {
@@ -30,13 +31,6 @@ java {
     }
 }
 
-// 配置资源过滤
-processResources {
-    filesMatching('**/plugin.yml') {
-        expand(project.properties)
-    }
-}
-
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
@@ -45,3 +39,7 @@ tasks.withType(Javadoc) {
     options.encoding = 'UTF-8'
 }
 
+processResources {
+    filteringCharset = 'UTF-8'
+    expand(version: project.version)
+}

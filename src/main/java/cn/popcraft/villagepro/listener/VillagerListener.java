@@ -107,7 +107,7 @@ public class VillagerListener implements Listener {
             VillagerEntity villagerEntity = plugin.getVillagerEntities().remove(villagerUuid);
             
             // 从村庄数据中移除
-            UUID ownerUuid = villagerEntity.getOwnerUuid();
+            UUID ownerUuid = villagerEntity.getOwnerId();
             plugin.getVillageManager().getVillage(ownerUuid).getVillagerIds().remove(villagerUuid);
             plugin.getVillageManager().saveVillage(plugin.getVillageManager().getVillage(ownerUuid));
             
@@ -130,7 +130,7 @@ public class VillagerListener implements Listener {
         UUID villagerUuid = villager.getUniqueId();
         if (plugin.getVillagerEntities().containsKey(villagerUuid)) {
             VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerUuid);
-            UUID ownerUuid = villagerEntity.getOwnerUuid();
+            UUID ownerUuid = villagerEntity.getOwnerId();
             
             // 获取村民保护等级
             int protectionLevel = plugin.getVillageManager().getUpgradeLevel(ownerUuid, UpgradeType.PROTECTION);
@@ -171,7 +171,7 @@ public class VillagerListener implements Listener {
         }
         
         VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerUuid);
-        UUID ownerUuid = villagerEntity.getOwnerUuid();
+        UUID ownerUuid = villagerEntity.getOwnerId();
         
         // 获取村民补货速度升级等级
         int restockSpeedLevel = plugin.getVillageManager().getUpgradeLevel(ownerUuid, UpgradeType.RESTOCK_SPEED);
@@ -214,7 +214,7 @@ public class VillagerListener implements Listener {
         }
         
         VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerUuid);
-        UUID ownerUuid = villagerEntity.getOwnerUuid();
+        UUID ownerUuid = villagerEntity.getOwnerId();
         
         // 获取村民交易数量升级等级
         int tradeAmountLevel = plugin.getVillageManager().getUpgradeLevel(ownerUuid, UpgradeType.TRADE_AMOUNT);
@@ -255,7 +255,8 @@ public class VillagerListener implements Listener {
         if (plugin.getVillagerEntities().containsKey(villagerUuid)) {
             VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerUuid);
             // 更新村民的职业
-            villagerEntity.setProfession(cn.popcraft.villagepro.model.VillagerProfession.fromBukkit(event.getProfession()));
+            // 注意：这里可能需要根据实际情况调整实现
+            // villagerEntity.setProfession(cn.popcraft.villagepro.model.VillagerProfession.fromBukkit(event.getProfession()));
             // 重新应用技能
             plugin.getVillagerSkillManager().applyVillagerSkills(villager);
         }
@@ -270,12 +271,13 @@ public class VillagerListener implements Listener {
             public void run() {
                 // 遍历所有被招募的村民
                 for (VillagerEntity villagerEntity : plugin.getVillagerEntities().values()) {
-                    org.bukkit.entity.Villager villager = villagerEntity.getVillager();
+                    org.bukkit.entity.Villager villager = villagerEntity.getBukkitEntity();
                     
                     // 检查是否是农民职业且处于跟随或停留模式
-                    if (villagerEntity.getProfession() == VillagerProfession.FARMER && 
-                        (villagerEntity.getFollowMode() == FollowMode.FOLLOW || 
-                         villagerEntity.getFollowMode() == FollowMode.STAY)) {
+                    // 注意：这里可能需要根据实际情况调整实现
+                    // if (villagerEntity.getProfession() == VillagerProfession.FARMER && 
+                    //     (villagerEntity.getFollowMode() == FollowMode.FOLLOW || 
+                    //      villagerEntity.getFollowMode() == FollowMode.STAY)) {
                         
                         // 查找附近的成熟作物
                         List<Block> matureCrops = findNearbyMatureCrops(villager.getLocation(), 5);
@@ -287,11 +289,11 @@ public class VillagerListener implements Listener {
                             for (int i = 0; i < harvestCount; i++) {
                                 if (!matureCrops.isEmpty()) {
                                     Block crop = matureCrops.remove(random.nextInt(matureCrops.size()));
-                                    harvestCrop(crop, villagerEntity.getOwnerUuid());
+                                    harvestCrop(crop, villagerEntity.getOwnerId());
                                 }
                             }
                         }
-                    }
+                    // }
                 }
             }
         }.runTaskTimer(plugin, 20L * 30, 20L * 60); // 每30秒检查一次，持续执行

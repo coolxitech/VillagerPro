@@ -78,16 +78,16 @@ public class VillagerCommand implements CommandExecutor {
                 plugin.getFollowManager().toggleFollowMode(player);
                 break;
             case "info":
-                // TODO: 显示村民信息
-                player.sendMessage("此功能正在开发中...");
+                // 显示村民信息
+                handleVillagerInfo(player);
                 break;
             case "list":
-                // TODO: 列出所有村民
-                player.sendMessage("此功能正在开发中...");
+                // 列出所有村民
+                handleVillagerList(player);
                 break;
             case "remove":
-                // TODO: 移除村民
-                player.sendMessage("此功能正在开发中...");
+                // 移除村民
+                handleVillagerRemove(player, args);
                 break;
             default:
                 player.sendMessage(messageManager.getMessage("commands.villager.usage"));
@@ -95,6 +95,81 @@ public class VillagerCommand implements CommandExecutor {
         }
 
         return true;
+    }
+    
+    /**
+     * 处理查看村民信息的命令
+     * @param player 玩家
+     */
+    private void handleVillagerInfo(Player player) {
+        // 查找最近的村民（5格范围）
+        Villager nearestVillager = plugin.getVillageManager().findNearestUnrecruitedVillager(player, 5);
+        
+        if (nearestVillager == null) {
+            player.sendMessage(messageManager.getMessage("villager.not-found"));
+            return;
+        }
+        
+        // 显示村民信息
+        VillagerEntity villagerEntity = plugin.getVillagerEntities().get(nearestVillager.getUniqueId());
+        if (villagerEntity != null) {
+            player.sendMessage(messageManager.getMessage("villager.name", Map.of("player", player.getName())));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&7跟随模式: &e" + villagerEntity.getFollowMode().name()));
+        }
+    }
+    
+    /**
+     * 处理列出所有村民的命令
+     * @param player 玩家
+     */
+    private void handleVillagerList(Player player) {
+        // 获取玩家的村庄数据
+        Village village = plugin.getVillageManager().getVillage(player.getUniqueId());
+        if (village == null || village.getVillagerIds().isEmpty()) {
+            player.sendMessage(messageManager.getMessage("villager.no-villagers"));
+            return;
+        }
+        
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6=== 你的村民列表 ==="));
+        for (UUID villagerId : village.getVillagerIds()) {
+            VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerId);
+            if (villagerEntity != null) {
+                Villager villager = villagerEntity.getBukkitEntity();
+                if (villager != null && villager.isValid()) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+                        "&e" + villager.getCustomName() + " &7- 跟随模式: " + villagerEntity.getFollowMode().name()));
+                } else {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+                        "&c[ID: " + villagerId.toString().substring(0, 8) + "] 村民已离线或不存在"));
+                }
+            }
+        }
+    }
+    
+    /**
+     * 处理移除村民的命令
+     * @param player 玩家
+     * @param args 命令参数
+     */
+    private void handleVillagerRemove(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(messageManager.getMessage("commands.villager.remove.usage"));
+            return;
+        }
+        
+        try {
+            // 尝试解析村民ID
+            UUID villagerId = UUID.fromString(args[1]);
+            
+            // 移除村民
+            if (plugin.getVillageManager().removeVillager(player, villagerId)) {
+                player.sendMessage(messageManager.getMessage("villager.removed"));
+            } else {
+                player.sendMessage(messageManager.getMessage("villager.not-found"));
+            }
+        } catch (IllegalArgumentException e) {
+            player.sendMessage(messageManager.getMessage("commands.villager.remove.invalid-id"));
+        }
     }
     
     /**
@@ -335,7 +410,6 @@ public class VillagerCommand implements CommandExecutor {
             VillagerEntity villagerEntity = plugin.getVillagerEntities().get(nearestVillager.getUniqueId());
             if (villagerEntity != null) {
                 player.sendMessage(messageManager.getMessage("villager.name", Map.of("player", player.getName())));
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&7职业: &e" + villagerEntity.getProfession().getDisplayName()));
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&7跟随模式: &e" + villagerEntity.getFollowMode().name()));
             }
         }
@@ -381,7 +455,7 @@ public class VillagerCommand implements CommandExecutor {
                     Villager villager = villagerEntity.getBukkitEntity();
                     if (villager != null && villager.isValid()) {
                         player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
-                            "&e" + villager.getCustomName() + " &7- 职业: " + villagerEntity.getProfession().getDisplayName()));
+                            "&e" + villager.getCustomName() + " &7- 职业: " + villagerEntity.getFollowMode().name()));
                     } else {
                         player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
                             "&c[ID: " + villagerId.toString().substring(0, 8) + "] 村民已离线或不存在"));
