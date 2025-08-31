@@ -3,6 +3,7 @@ package cn.popcraft.villagepro.manager;
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.CropStorage;
+import cn.popcraft.villagepro.model.Village;
 import org.bukkit.Material;
 
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Collection;
 
 public class CropManager {
     private final VillagePro plugin;
@@ -22,17 +24,25 @@ public class CropManager {
     }
     
     private void loadCropStorages() {
-        // 从数据库加载所有作物存储数据
-        // 这里应该从持久化存储中加载作物数据
-        // 由于作物数据现在存储在VillageStorage中，我们从那里加载
-        
+        // 从VillageStorage加载所有村庄数据，然后提取作物存储信息
         try {
-            // 获取所有村庄所有者，然后加载他们的作物数据
-            // 注意：在实际实现中，应该有一个专门的作物数据存储机制
-            plugin.getLogger().info("正在加载作物存储数据...");
+            // 获取所有村庄数据
+            Collection<Village> villages = plugin.getDatabase().findAll();
             
-            // 当前实现中，作物存储是按需加载的，即当玩家第一次访问时才创建
-            // 这里保持为空是合理的，因为我们采用懒加载策略
+            // 从每个村庄提取作物存储数据
+            for (Village village : villages) {
+                UUID playerId = village.getOwnerUuid();
+                if (playerId != null) {
+                    // 创建作物存储对象
+                    Map<String, Integer> crops = village.getCropStorage();
+                    if (crops != null && !crops.isEmpty()) {
+                        CropStorage storage = new CropStorage(playerId, crops);
+                        cropStorages.put(playerId, storage);
+                    }
+                }
+            }
+            
+            plugin.getLogger().info("已加载 " + cropStorages.size() + " 个作物存储数据");
         } catch (Exception e) {
             plugin.getLogger().severe("加载作物存储数据时发生错误: " + e.getMessage());
             e.printStackTrace();
@@ -161,9 +171,19 @@ public class CropManager {
             
             // 检查存储是否为空，避免保存空数据
             if (!storage.isEmpty()) {
-                // 在实际实现中，这里应该将作物存储数据保存到数据库
-                // 例如：database.saveCropStorage(playerId, storage);
-                savedCount++;
+                // 获取玩家的村庄数据
+                cn.popcraft.villagepro.model.Village village = plugin.getVillageManager().getVillage(playerId);
+                if (village != null) {
+                    // 更新村庄中的作物存储数据
+                    village.setCropStorage(storage.getCrops());
+                    // 保存村庄数据（包含作物存储）
+                    try {
+                        plugin.getDatabase().save(village);
+                        savedCount++;
+                    } catch (java.sql.SQLException e) {
+                        plugin.getLogger().severe("保存作物数据失败: 玩家=" + playerId + ", 错误=" + e.getMessage());
+                    }
+                }
             }
         }
         plugin.getLogger().info("已保存 " + savedCount + " 个作物存储数据");
@@ -173,11 +193,28 @@ public class CropManager {
      * 加载所有作物数据
      */
     public void loadAll() {
-        // 从数据库加载所有作物存储数据
-        // 在实际实现中，这里应该从数据库加载所有玩家的作物数据
-        // 例如：List<CropStorage> storages = database.loadAllCropStorages();
-        //      storages.forEach(storage -> cropStorages.put(storage.getPlayerId(), storage));
-        
-        plugin.getLogger().info("已加载作物数据");
+        // 从VillageStorage加载所有村庄数据，然后提取作物存储信息
+        try {
+            // 获取所有村庄数据
+            Collection<cn.popcraft.villagepro.model.Village> villages = plugin.getDatabase().findAll();
+            
+            // 从每个村庄提取作物存储数据
+            for (cn.popcraft.villagepro.model.Village village : villages) {
+                UUID playerId = village.getOwnerUuid();
+                if (playerId != null) {
+                    // 创建作物存储对象
+                    Map<String, Integer> crops = village.getCropStorage();
+                    if (crops != null && !crops.isEmpty()) {
+                        CropStorage storage = new CropStorage(playerId, crops);
+                        cropStorages.put(playerId, storage);
+                    }
+                }
+            }
+            
+            plugin.getLogger().info("已加载 " + cropStorages.size() + " 个作物存储数据");
+        } catch (Exception e) {
+            plugin.getLogger().severe("加载作物存储数据时发生错误: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

@@ -26,9 +26,76 @@ public class FollowManager {
      * @param player 玩家
      */
     public void toggleFollowMode(Player player) {
-        // 这里应该实现切换跟随模式的逻辑
-        // 例如：在自由活动、跟随玩家、停留原地三种模式之间切换
-        player.sendMessage("跟随模式切换功能正在开发中...");
+        // 查找玩家附近被招募的村民
+        Villager nearestVillager = null;
+        double nearestDistance = 10.0; // 最大距离10格
+        
+        for (VillagerEntity villagerEntity : plugin.getVillagerEntities().values()) {
+            Villager villager = villagerEntity.getBukkitEntity();
+            if (villager != null && villager.isValid() && 
+                villager.getWorld().equals(player.getWorld())) {
+                
+                double distance = player.getLocation().distance(villager.getLocation());
+                if (distance <= nearestDistance) {
+                    // 检查村民是否属于该玩家
+                    if (villagerEntity.getOwnerId().equals(player.getUniqueId())) {
+                        nearestDistance = distance;
+                        nearestVillager = villager;
+                    }
+                }
+            }
+        }
+        
+        if (nearestVillager == null) {
+            player.sendMessage(plugin.getMessageManager().getMessage("follow.no-villager"));
+            return;
+        }
+        
+        // 获取村民实体
+        VillagerEntity targetVillagerEntity = plugin.getVillagerEntities().get(nearestVillager.getUniqueId());
+        if (targetVillagerEntity == null) {
+            player.sendMessage(plugin.getMessageManager().getMessage("follow.not-owned"));
+            return;
+        }
+        
+        // 获取当前模式并切换到下一个模式
+        FollowMode currentFollowMode = targetVillagerEntity.getFollowMode();
+        FollowMode nextFollowMode;
+        
+        switch (currentFollowMode) {
+            case NONE:
+                nextFollowMode = FollowMode.FOLLOW;
+                break;
+            case FOLLOW:
+                nextFollowMode = FollowMode.STAY;
+                break;
+            case STAY:
+                nextFollowMode = FollowMode.NONE;
+                break;
+            default:
+                nextFollowMode = FollowMode.NONE;
+                break;
+        }
+        
+        // 设置新的跟随模式
+        setFollowMode(nearestVillager, nextFollowMode);
+        
+        // 向玩家发送消息
+        String displayModeName = "";
+        switch (nextFollowMode) {
+            case NONE:
+                displayModeName = "自由活动";
+                break;
+            case FOLLOW:
+                displayModeName = "跟随玩家";
+                break;
+            case STAY:
+                displayModeName = "停留原地";
+                break;
+        }
+        
+        player.sendMessage(plugin.getMessageManager().getMessage("follow.mode-changed")
+            .replace("{mode}", displayModeName));
     }
     
     /**

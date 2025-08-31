@@ -10,3 +10,51 @@
 /fix.md
 /newfix.md
 /fix.md
+>>>>>>> 17c9d0ed45e7ffcdfc8e21d06fc3110507eaf79a
+# 编译输出目录
+bin/
+build/
+
+# Gradle相关文件
+.gradle/
+build/
+
+# IDE相关文件
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 其他临时文件
+*.log
+
+# Markdown文件（除了README.md）
+*.md
+!README.md
+
+# Java编译后的类文件
+*.class
+
+# 其他特定文件
+/work.md
+/API_MIGRATION_REPORT.md
+/src/main/java/cn/popcraft/villagepro/manager/CropManager.java.txt
+/fix.md
+/newfix.md
+=======
+/build
+/work.md
+/.vscode
+/*.log
+/.mdmp
+/API_MIGRATION_REPORT.md
+/.gradle
+/src/main/java/cn/popcraft/villagepro/manager/CropManager.java.txt
+/*.class
+/fix.md
+/newfix.md

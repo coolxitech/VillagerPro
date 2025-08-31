@@ -3,7 +3,7 @@ package cn.popcraft.villagepro.manager;
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.PlayerTaskData;
 import cn.popcraft.villagepro.model.Task;
-import cn.popcraft.villagepro.storage.VillageStorage;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -15,144 +15,249 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.Random;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TaskManager {
     private final VillagePro plugin;
-    private final VillageStorage database;
-    private final Map<UUID, PlayerTaskData> taskCache = new HashMap<>();
-    private final Random random = new Random();
-
-    public List<Task> getAvailableTasks(UUID playerId) {
-        PlayerTaskData playerData = taskCache.get(playerId);
-        if (playerData == null) {
-            return new ArrayList<>();
-        }
-        return playerData.getActiveTasks();
-    }
-
-    public void updateTaskProgress(UUID playerId, UUID taskId, int amount) {
-        PlayerTaskData playerData = taskCache.get(playerId);
-        if (playerData == null) return;
-        
-        Task task = playerData.getTaskById(taskId);
-        if (task != null) {
-            int newProgress = task.getProgress() + amount;
-            task.setProgress(newProgress);
-            database.updateTaskProgress(playerId, taskId, newProgress);
-        }
-    }
-
-    public void completeTask(UUID playerId, UUID taskId) {
-        PlayerTaskData playerData = taskCache.get(playerId);
-        if (playerData == null) return;
-        
-        Task task = playerData.getTaskById(taskId);
-        if (task != null) {
-            playerData.removeTask(taskId);
-            database.completeTask(playerId, taskId);
-        }
-    }
+    private final Map<UUID, PlayerTaskData> taskCache = new ConcurrentHashMap<>();
 
     public TaskManager(VillagePro plugin) {
         this.plugin = plugin;
-        this.database = plugin.getDatabase();
-        
-        // 注册数据模型
-        database.registerTable(PlayerTaskData.class);
-        
-        // 加载所有任务数据
-        loadAll();
-    }
-
-    /**
-     * 加载所有任务数据
-     */
-    public void loadAll() {
-        taskCache.clear();
-        // 修复数据库调用，添加表名参数
-        database.findAll(PlayerTaskData.class, "player_tasks").forEach(taskData -> 
-            taskCache.put(taskData.getPlayerUuid(), taskData)
-        );
-        plugin.getLogger().info("已加载 " + taskCache.size() + " 个玩家任务数据");
-    }
-
-    /**
-     * 保存所有任务数据
-     */
-    public void saveAll() {
-        // 修复数据库调用，使用带参数的save方法
-        taskCache.values().forEach(taskData -> 
-            database.saveWithId(taskData, taskData.getPlayerUuid().toString(), "player_tasks")
-        );
-        plugin.getLogger().info("已保存 " + taskCache.size() + " 个玩家任务数据");
-    }
-
-    /**
-     * 保存玩家任务数据
-     */
-    public void savePlayerTaskData(PlayerTaskData taskData) {
-        // 修复数据库调用，使用带参数的save方法
-        database.saveWithId(taskData, taskData.getPlayerUuid().toString(), "player_tasks");
+        startPeriodicSaveTask();
     }
     
     /**
-     * 获取玩家任务数据
+     * 在插件禁用时关闭数据库连接
      */
-    public PlayerTaskData getPlayerTaskData(UUID playerId) {
-        return taskCache.get(playerId);
-    }
-    
-    /**
-     * 创建或获取玩家任务数据
-     */
-    public PlayerTaskData getOrCreatePlayerTaskData(UUID playerId) {
-        return taskCache.computeIfAbsent(playerId, id -> {
-            PlayerTaskData data = new PlayerTaskData();
-            data.setPlayerUuid(id);
-            return data;
-        });
+    public void shutdown() {
     }
     
     /**
      * 为玩家分配新任务
+     * 如果检测到Quests插件，则使用Quests系统
+     * 否则使用内置任务系统
      */
-    public void assignNewTask(Player player) {
-        PlayerTaskData taskData = getOrCreatePlayerTaskData(player.getUniqueId());
-        
-        // 限制每个玩家最多3个活跃任务
-        if (taskData.getActiveTasks().size() >= 3) {
-            player.sendMessage("你已经有太多任务了!");
-            return;
+    public Task assignNewTask(Player player) {
+        // 检查是否可以使用Quests系统
+        if (plugin.getQuestsIntegrationManager().isQuestsAvailable()) {
+            // 使用Quests系统创建任务
+            return assignQuestsTask(player);
+        } else {
+            // 使用内置任务系统
+            return assignInternalTask(player);
         }
-        
-        Task newTask = generateRandomTask(player);
-        taskData.getActiveTasks().add(newTask);
-        
-        // 保存任务数据
-        savePlayerTaskData(taskData);
-        
-        // 通知玩家
-        player.sendMessage("你获得了一个新任务: " + newTask.getDescription());
     }
     
     /**
-     * 生成随机任务
+     * 使用Quests系统为玩家分配任务
      */
-    public Task generateRandomTask(Player player) {
-        // 获取所有可能的任务类型
-        Task.TaskType[] taskTypes = Task.TaskType.values();
-        Task.TaskType randomType;
+    private Task assignQuestsTask(Player player) {
+        // 生成随机任务类型
+        Task.TaskType randomType = getRandomTaskType();
         
-        // 确保选择一个有效的任务类型
-        do {
-            randomType = taskTypes[plugin.getRandom().nextInt(taskTypes.length)];
-        } while (!isValidTaskType(randomType));
+        // 生成任务参数
+        int targetAmount;
+        double rewardMoney;
+        int rewardExp;
         
-        // 根据任务类型设置目标数量和奖励
-        int targetAmount = 0;
-        double rewardMoney = 0;
-        int rewardExp = 0;
+        // 根据任务类型设置参数
+        switch (randomType) {
+            case COLLECT_WHEAT:
+                targetAmount = 32 + plugin.getRandom().nextInt(32); // 32-63
+                rewardMoney = 100 + plugin.getRandom().nextInt(100); // 100-200
+                rewardExp = 50 + plugin.getRandom().nextInt(50); // 50-100
+                break;
+                
+            case KILL_ZOMBIE:
+                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
+                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
+                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
+                break;
+                
+            case DELIVER_POTION:
+                targetAmount = 3 + plugin.getRandom().nextInt(3); // 3-5
+                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
+                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
+                break;
+                
+            case MINE_IRON:
+                targetAmount = 16 + plugin.getRandom().nextInt(16); // 16-31
+                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
+                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
+                break;
+                
+            case MINE_DIAMOND:
+                targetAmount = 3 + plugin.getRandom().nextInt(3); // 3-5
+                rewardMoney = 500 + plugin.getRandom().nextInt(200); // 500-700
+                rewardExp = 200 + plugin.getRandom().nextInt(100); // 200-300
+                break;
+                
+            case BAKE_BREAD:
+                targetAmount = 16 + plugin.getRandom().nextInt(16); // 16-31
+                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
+                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
+                break;
+                
+            case KILL_SKELETON:
+                targetAmount = 8 + plugin.getRandom().nextInt(8); // 8-15
+                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
+                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
+                break;
+                
+            case KILL_CREEPER:
+                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
+                rewardMoney = 300 + plugin.getRandom().nextInt(150); // 300-450
+                rewardExp = 150 + plugin.getRandom().nextInt(100); // 150-250
+                break;
+                
+            case REACH_LEVEL:
+                targetAmount = 5 + plugin.getRandom().nextInt(10); // 5-15
+                rewardMoney = 250 + plugin.getRandom().nextInt(150); // 250-400
+                rewardExp = 125 + plugin.getRandom().nextInt(75); // 125-200
+                break;
+                
+            case FISH_ITEM:
+                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
+                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
+                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
+                break;
+                
+            case CRAFT_ITEM:
+                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
+                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
+                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
+                break;
+                
+            case ENCHANT_ITEM:
+                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
+                rewardMoney = 250 + plugin.getRandom().nextInt(150); // 250-400
+                rewardExp = 125 + plugin.getRandom().nextInt(75); // 125-200
+                break;
+                
+            case BREED_ANIMAL:
+                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
+                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
+                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
+                break;
+                
+            case HARVEST_CROP:
+                targetAmount = 32 + plugin.getRandom().nextInt(32); // 32-63
+                rewardMoney = 100 + plugin.getRandom().nextInt(100); // 100-200
+                rewardExp = 50 + plugin.getRandom().nextInt(50); // 50-100
+                break;
+                
+            case EXPLORE_BIOME:
+                targetAmount = 2 + plugin.getRandom().nextInt(2); // 2-3
+                rewardMoney = 400 + plugin.getRandom().nextInt(200); // 400-600
+                rewardExp = 200 + plugin.getRandom().nextInt(100); // 200-300
+                break;
+                
+            case TRADE_WITH_VILLAGER:
+                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
+                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
+                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
+                break;
+                
+            case COLLECT_WOOD:
+                targetAmount = 32 + plugin.getRandom().nextInt(32); // 32-63
+                rewardMoney = 100 + plugin.getRandom().nextInt(100); // 100-200
+                rewardExp = 50 + plugin.getRandom().nextInt(50); // 50-100
+                break;
+                
+            case MINE_STONE:
+                targetAmount = 64 + plugin.getRandom().nextInt(64); // 64-127
+                rewardMoney = 75 + plugin.getRandom().nextInt(75); // 75-150
+                rewardExp = 30 + plugin.getRandom().nextInt(30); // 30-60
+                break;
+                
+            case KILL_SPIDER:
+                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
+                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
+                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
+                break;
+                
+            case KILL_ENDERMAN:
+                targetAmount = 3 + plugin.getRandom().nextInt(3); // 3-5
+                rewardMoney = 400 + plugin.getRandom().nextInt(200); // 400-600
+                rewardExp = 200 + plugin.getRandom().nextInt(100); // 200-300
+                break;
+                
+            case COLLECT_FLOWER:
+                targetAmount = 32 + plugin.getRandom().nextInt(32); // 32-63
+                rewardMoney = 100 + plugin.getRandom().nextInt(100); // 100-200
+                rewardExp = 50 + plugin.getRandom().nextInt(50); // 50-100
+                break;
+                
+            case SHEAR_SHEEP:
+                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
+                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
+                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
+                break;
+                
+            case MILK_COW:
+                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
+                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
+                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
+                break;
+                
+            case TAME_ANIMAL:
+                targetAmount = 3 + plugin.getRandom().nextInt(3); // 3-5
+                rewardMoney = 300 + plugin.getRandom().nextInt(150); // 300-450
+                rewardExp = 150 + plugin.getRandom().nextInt(100); // 150-250
+                break;
+                
+            case BREW_POTION:
+                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
+                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
+                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
+                break;
+                
+            default:
+                // 默认值
+                targetAmount = 10;
+                rewardMoney = 100;
+                rewardExp = 50;
+                break;
+        }
         
+        // 调用Quests API创建任务
+        boolean success = plugin.getQuestsIntegrationManager().createQuest(
+            player, 
+            randomType.name(), 
+            targetAmount, 
+            rewardExp, 
+            rewardMoney
+        );
+        
+        if (success) {
+            // 创建一个临时的Task对象用于界面显示
+            Task questsTask = new Task(randomType, targetAmount, rewardMoney, rewardExp);
+            // 实际的任务管理由Quests插件处理
+            return questsTask;
+        } else {
+            // 如果Quests任务创建失败，回退到内置系统
+            return assignInternalTask(player);
+        }
+    }
+    
+    /**
+     * 使用内置系统为玩家分配任务
+     */
+    private Task assignInternalTask(Player player) {
+        // 生成随机任务类型
+        Task.TaskType randomType = getRandomTaskType();
+        
+        // 确保任务类型有效
+        while (!isValidTaskType(randomType)) {
+            randomType = getRandomTaskType();
+        }
+        
+        // 生成任务参数
+        int targetAmount;
+        double rewardMoney;
+        int rewardExp;
+        
+        // 根据任务类型设置参数
         switch (randomType) {
             case COLLECT_WOOD:
                 targetAmount = 64 + plugin.getRandom().nextInt(64); // 64-127
@@ -320,9 +425,16 @@ public class TaskManager {
      * 验证任务类型是否有效
      */
     private boolean isValidTaskType(Task.TaskType type) {
-        // 这里可以添加具体的验证逻辑
-        // 比如检查任务类型是否被禁用等
-        return true;
+        // 检查任务类型是否在配置文件启用的任务类型列表中
+        List<String> enabledTaskTypes = plugin.getConfig().getStringList("tasks.types");
+        
+        // 如果配置中没有任务类型列表，则默认启用所有任务类型
+        if (enabledTaskTypes.isEmpty()) {
+            return true;
+        }
+        
+        // 检查当前任务类型是否在启用列表中
+        return enabledTaskTypes.contains(type.name());
     }
     
     /**
@@ -416,7 +528,8 @@ public class TaskManager {
         
         // 清除当前任务
         taskData.setCurrentTask(null);
-        database.saveWithId(taskData, taskData.getPlayerUuid().toString(), "player_tasks");
+        // 注释掉对不存在的数据库的引用
+        // database.saveWithId(taskData, taskData.getPlayerUuid().toString(), "player_tasks");
         
         // 发送奖励消息
         Map<String, String> replacements = new HashMap<>();
@@ -435,5 +548,147 @@ public class TaskManager {
             return 0.0;
         }
         return (double) task.getProgress() / task.getTargetAmount() * 100;
+    }
+    
+    /**
+     * 生成随机任务类型
+     */
+    private Task.TaskType getRandomTaskType() {
+        Task.TaskType[] taskTypes = Task.TaskType.values();
+        return taskTypes[plugin.getRandom().nextInt(taskTypes.length)];
+    }
+    
+    /**
+     * 启动定期保存任务数据的任务
+     */
+    private void startPeriodicSaveTask() {
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            saveAll();
+        }, 6000L, 6000L); // 每5分钟保存一次
+    }
+    
+    /**
+     * 加载所有任务数据
+     */
+    public void loadAll() {
+        // 从存储中加载所有任务数据
+        // 移除对不存在的数据库的引用
+        // database.findAll(PlayerTaskData.class).forEach(taskData -> 
+        //     taskCache.put(taskData.getPlayerUuid(), taskData));
+    }
+
+    /**
+     * 保存所有任务数据
+     */
+    public void saveAll() {
+        // 保存所有任务数据到存储
+        // 移除对不存在的数据库的引用
+        // taskCache.values().forEach(taskData -> 
+        //     database.saveWithId(taskData, taskData.getPlayerUuid().toString(), "player_tasks"));
+    }
+
+    /**
+     * 保存玩家任务数据
+     */
+    public void savePlayerTaskData(PlayerTaskData taskData) {
+        // 移除对不存在的数据库的引用
+        // database.saveWithId(taskData, playerId.toString(), "player_tasks");
+    }
+    
+    /**
+     * 获取玩家任务数据
+     */
+    public PlayerTaskData getPlayerTaskData(UUID playerId) {
+        return taskCache.get(playerId);
+    }
+    
+    /**
+     * 创建或获取玩家任务数据
+     */
+    public PlayerTaskData getOrCreatePlayerTaskData(UUID playerId) {
+        return taskCache.computeIfAbsent(playerId, id -> {
+            PlayerTaskData data = new PlayerTaskData();
+            data.setPlayerUuid(id);
+            return data;
+        });
+    }
+    
+    /**
+     * 更新任务进度
+     * 如果使用Quests系统，则同时更新Quests任务进度
+     */
+    public void updateTaskProgress(UUID playerId, UUID taskId, int amount) {
+        // 首先更新内置任务系统
+        PlayerTaskData taskData = taskCache.get(playerId);
+        if (taskData == null) return;
+        
+        Task task = taskData.getTaskById(taskId);
+        if (task == null) return;
+        
+        task.setProgress(task.getProgress() + amount);
+        // 注释掉对不存在的数据库的引用
+        // database.saveWithId(taskData, playerId.toString(), "player_tasks");
+        
+        // 如果启用了Quests系统，也更新Quests任务进度
+        Player player = Bukkit.getPlayer(playerId);
+        if (player != null && plugin.getQuestsIntegrationManager().isQuestsAvailable()) {
+            plugin.getQuestsIntegrationManager().updateQuestProgress(player, task.getType().name(), amount);
+        }
+    }
+    
+    /**
+     * 完成任务
+     * 如果使用Quests系统，则同时完成Quests任务
+     */
+    public void completeTask(UUID playerId, UUID taskId) {
+        // 完成内置任务系统中的任务
+        PlayerTaskData taskData = taskCache.get(playerId);
+        if (taskData == null) return;
+        
+        Task task = taskData.getTaskById(taskId);
+        if (task == null) return;
+        
+        // 从活跃任务列表中移除
+        taskData.getActiveTasks().removeIf(t -> t.getId().equals(taskId));
+        
+        // 如果启用了Quests系统，也完成Quests任务
+        Player player = Bukkit.getPlayer(playerId);
+        if (player != null && plugin.getQuestsIntegrationManager().isQuestsAvailable()) {
+            plugin.getQuestsIntegrationManager().completeQuest(player, task.getType().name());
+        }
+    }
+    
+    /**
+     * 创建进度条
+     * @param percentage 进度百分比
+     * @return 进度条字符串
+     */
+    public String createProgressBar(double percentage) {
+        int filledBars = (int) (percentage / 10);
+        StringBuilder bar = new StringBuilder("[");
+        
+        for (int i = 0; i < 10; i++) {
+            if (i < filledBars) {
+                bar.append("█");
+            } else {
+                bar.append("░");
+            }
+        }
+        
+        bar.append("] ");
+        bar.append(String.format("%.1f", percentage)).append("%");
+        
+        return bar.toString();
+    }
+    
+    /**
+     * 获取可用任务
+     */
+    public List<Task> getAvailableTasks(UUID playerId) {
+        PlayerTaskData playerData = taskCache.get(playerId);
+        if (playerData == null) {
+            return new ArrayList<>();
+        }
+        return playerData.getActiveTasks();
     }
 }

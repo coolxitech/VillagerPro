@@ -360,7 +360,7 @@ public class VillageManager {
      * @param upgrade 升级配置
      * @return 是否有足够的资源
      */
-    private boolean hasEnoughUpgradeResources(Player player, cn.popcraft.villagepro.model.Upgrade upgrade) {
+    public boolean hasEnoughUpgradeResources(Player player, cn.popcraft.villagepro.model.Upgrade upgrade) {
         // 检查金钱（如果经济系统可用）
         double costMoney = upgrade.getCostMoney();
         if (costMoney > 0 && plugin.getEconomyManager().isAvailable()) {
@@ -408,7 +408,7 @@ public class VillageManager {
      * @param player 玩家
      * @param upgrade 升级配置
      */
-    private void consumeUpgradeResources(Player player, cn.popcraft.villagepro.model.Upgrade upgrade) {
+    public void consumeUpgradeResources(Player player, cn.popcraft.villagepro.model.Upgrade upgrade) {
         // 扣除金钱（如果经济系统可用）
         double costMoney = upgrade.getCostMoney();
         if (costMoney > 0 && plugin.getEconomyManager().isAvailable()) {

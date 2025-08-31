@@ -2,6 +2,7 @@ package cn.popcraft.villagepro.gui;
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.TaskManager;
+import cn.popcraft.villagepro.model.PlayerTaskData;
 import cn.popcraft.villagepro.model.Task;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -10,17 +11,22 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent; // 添加导入
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class TaskGUI implements Listener {
     private final VillagePro plugin;
     private final TaskManager taskManager;
+    // 添加一个映射来存储玩家正在查看的任务
+    private final Map<UUID, Task> playerViewingTasks = new HashMap<>();
 
     public TaskGUI(VillagePro plugin, TaskManager taskManager) {
         this.plugin = plugin;
@@ -166,16 +172,204 @@ public class TaskGUI implements Listener {
      * 获取玩家任务积分
      */
     private int getPlayerTaskPoints(Player player) {
-        // 这里应该从数据库或配置中获取玩家的任务积分
-        // 暂时返回0，你需要根据实际需求实现
+        // 从数据库或配置中获取玩家的任务积分
+        PlayerTaskData playerTaskData = taskManager.getPlayerTaskData(player.getUniqueId());
+        if (playerTaskData != null) {
+            return playerTaskData.getTaskPoints();
+        }
         return 0;
+    }
+
+    /**
+     * 打开任务商店GUI
+     */
+    public void openTaskShopGUI(Player player) {
+        Inventory gui = Bukkit.createInventory(null, 27, "任务商店");
+        
+        // 示例商品 - 可以用任务积分兑换的物品
+        ItemStack speedPotion = new ItemStack(Material.POTION);
+        ItemMeta speedMeta = speedPotion.getItemMeta();
+        if (speedMeta != null) {
+            speedMeta.setDisplayName(ChatColor.AQUA + "迅捷药水");
+            speedMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "使用后获得速度II效果30秒",
+                ChatColor.YELLOW + "价格: 50任务积分"
+            ));
+            speedPotion.setItemMeta(speedMeta);
+        }
+        gui.setItem(11, speedPotion);
+        
+        ItemStack strengthPotion = new ItemStack(Material.POTION);
+        ItemMeta strengthMeta = strengthPotion.getItemMeta();
+        if (strengthMeta != null) {
+            strengthMeta.setDisplayName(ChatColor.RED + "力量药水");
+            strengthMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "使用后获得力量效果30秒",
+                ChatColor.YELLOW + "价格: 75任务积分"
+            ));
+            strengthPotion.setItemMeta(strengthMeta);
+        }
+        gui.setItem(12, strengthPotion);
+        
+        ItemStack jumpBoostPotion = new ItemStack(Material.POTION);
+        ItemMeta jumpMeta = jumpBoostPotion.getItemMeta();
+        if (jumpMeta != null) {
+            jumpMeta.setDisplayName(ChatColor.GREEN + "跳跃提升药水");
+            jumpMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "使用后获得跳跃提升效果30秒",
+                ChatColor.YELLOW + "价格: 40任务积分"
+            ));
+            jumpBoostPotion.setItemMeta(jumpMeta);
+        }
+        gui.setItem(13, jumpBoostPotion);
+        
+        ItemStack healPotion = new ItemStack(Material.POTION);
+        ItemMeta healMeta = healPotion.getItemMeta();
+        if (healMeta != null) {
+            healMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "治疗药水");
+            healMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "立即恢复4颗心的生命值",
+                ChatColor.YELLOW + "价格: 60任务积分"
+            ));
+            healPotion.setItemMeta(healMeta);
+        }
+        gui.setItem(14, healPotion);
+        
+        ItemStack diamond = new ItemStack(Material.DIAMOND);
+        ItemMeta diamondMeta = diamond.getItemMeta();
+        if (diamondMeta != null) {
+            diamondMeta.setDisplayName(ChatColor.AQUA + "钻石");
+            diamondMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "珍贵的钻石",
+                ChatColor.YELLOW + "价格: 100任务积分"
+            ));
+            diamond.setItemMeta(diamondMeta);
+        }
+        gui.setItem(15, diamond);
+        
+        // 添加返回按钮
+        ItemStack backButton = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = backButton.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName(ChatColor.GRAY + "返回");
+            backButton.setItemMeta(backMeta);
+        }
+        gui.setItem(26, backButton);
+        
+        player.openInventory(gui);
+    }
+    
+    /**
+     * 处理任务商店点击事件
+     */
+    private void handleTaskShopClick(Player player, ItemStack clickedItem) {
+        ItemMeta meta = clickedItem.getItemMeta();
+        if (meta == null) return;
+        
+        String displayName = ChatColor.stripColor(meta.getDisplayName());
+        PlayerTaskData playerTaskData = taskManager.getPlayerTaskData(player.getUniqueId());
+        
+        if (playerTaskData == null) {
+            player.sendMessage(ChatColor.RED + "无法获取玩家任务数据!");
+            return;
+        }
+        
+        int playerPoints = playerTaskData.getTaskPoints();
+        
+        switch (displayName) {
+            case "迅捷药水":
+                if (playerPoints >= 50) {
+                    playerTaskData.addTaskPoints(-50);
+                    player.getInventory().addItem(createPotionItem(Material.POTION, ChatColor.AQUA + "迅捷药水", "SPEED"));
+                    player.sendMessage(ChatColor.GREEN + "购买成功! 获得迅捷药水");
+                    taskManager.savePlayerTaskData(playerTaskData);
+                    player.closeInventory();
+                } else {
+                    player.sendMessage(ChatColor.RED + "任务积分不足! 需要50积分");
+                }
+                break;
+            case "力量药水":
+                if (playerPoints >= 75) {
+                    playerTaskData.addTaskPoints(-75);
+                    player.getInventory().addItem(createPotionItem(Material.POTION, ChatColor.RED + "力量药水", "STRENGTH"));
+                    player.sendMessage(ChatColor.GREEN + "购买成功! 获得力量药水");
+                    taskManager.savePlayerTaskData(playerTaskData);
+                    player.closeInventory();
+                } else {
+                    player.sendMessage(ChatColor.RED + "任务积分不足! 需要75积分");
+                }
+                break;
+            case "跳跃提升药水":
+                if (playerPoints >= 40) {
+                    playerTaskData.addTaskPoints(-40);
+                    player.getInventory().addItem(createPotionItem(Material.POTION, ChatColor.GREEN + "跳跃提升药水", "JUMP"));
+                    player.sendMessage(ChatColor.GREEN + "购买成功! 获得跳跃提升药水");
+                    taskManager.savePlayerTaskData(playerTaskData);
+                    player.closeInventory();
+                } else {
+                    player.sendMessage(ChatColor.RED + "任务积分不足! 需要40积分");
+                }
+                break;
+            case "治疗药水":
+                if (playerPoints >= 60) {
+                    playerTaskData.addTaskPoints(-60);
+                    player.getInventory().addItem(createPotionItem(Material.POTION, ChatColor.LIGHT_PURPLE + "治疗药水", "HEAL"));
+                    player.sendMessage(ChatColor.GREEN + "购买成功! 获得治疗药水");
+                    taskManager.savePlayerTaskData(playerTaskData);
+                    player.closeInventory();
+                } else {
+                    player.sendMessage(ChatColor.RED + "任务积分不足! 需要60积分");
+                }
+                break;
+            case "钻石":
+                if (playerPoints >= 100) {
+                    playerTaskData.addTaskPoints(-100);
+                    player.getInventory().addItem(new ItemStack(Material.DIAMOND));
+                    player.sendMessage(ChatColor.GREEN + "购买成功! 获得钻石");
+                    taskManager.savePlayerTaskData(playerTaskData);
+                    player.closeInventory();
+                } else {
+                    player.sendMessage(ChatColor.RED + "任务积分不足! 需要100积分");
+                }
+                break;
+            case "返回":
+                player.closeInventory();
+                openTaskGUI(player);
+                break;
+        }
+    }
+    
+    /**
+     * 创建药水物品
+     */
+    private ItemStack createPotionItem(Material material, String displayName, String potionType) {
+        ItemStack potion = new ItemStack(material);
+        ItemMeta meta = potion.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(displayName);
+            meta.setLore(Arrays.asList(ChatColor.GRAY + "药水类型: " + potionType));
+            potion.setItemMeta(meta);
+        }
+        return potion;
+    }
+    
+    /**
+     * 处理任务完成时奖励积分
+     */
+    public void rewardTaskPoints(Player player, int points) {
+        PlayerTaskData playerTaskData = taskManager.getPlayerTaskData(player.getUniqueId());
+        if (playerTaskData != null) {
+            playerTaskData.addTaskPoints(points);
+            taskManager.savePlayerTaskData(playerTaskData);
+            player.sendMessage(ChatColor.GREEN + "获得 " + points + " 任务积分! 当前积分: " + playerTaskData.getTaskPoints());
+        }
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         String title = event.getView().getTitle();
 
-        boolean isTaskGUI = title.equals("任务中心") || title.equals("我的任务");
+        boolean isTaskGUI = title.equals("任务中心") || title.equals("我的任务") || title.equals("任务商店") || title.equals("任务详情");
         
         // 如果是任务GUI，完全阻止所有操作
         if (isTaskGUI) {
@@ -202,6 +396,13 @@ public class TaskGUI implements Listener {
             handleTaskCenterClick(player, clickedItem);
         } else if (title.equals("我的任务")) {
             handlePlayerTasksClick(player, clickedItem);
+        } else if (title.equals("任务商店")) {
+            handleTaskShopClick(player, clickedItem);
+        } else if (title.equals("任务详情")) {
+            Task currentTask = playerViewingTasks.get(player.getUniqueId());
+            if (currentTask != null) {
+                handleTaskDetailClick(player, clickedItem, currentTask);
+            }
         }
     }
 
@@ -237,7 +438,7 @@ public class TaskGUI implements Listener {
                 openPlayerTasksGUI(player);
                 break;
             case "任务商店":
-                player.sendMessage(ChatColor.YELLOW + "任务商店功能正在开发中...");
+                openTaskShopGUI(player);
                 break;
             default:
                 break;
@@ -259,8 +460,148 @@ public class TaskGUI implements Listener {
             return;
         }
 
-        // 这里可以添加任务详情查看或完成任务的逻辑
-        player.sendMessage(ChatColor.GRAY + "点击查看任务详情...");
+        // 查找对应的任务并显示详情
+        List<Task> playerTasks = taskManager.getPlayerActiveTasks(player.getUniqueId());
+        for (Task task : playerTasks) {
+            if (ChatColor.stripColor(getTaskMaterial(task.getType()).name()).equals(displayName) ||
+                ChatColor.stripColor(task.getType().toString()).equals(displayName)) {
+                
+                // 打开任务详情GUI而不是发送消息
+                player.closeInventory();
+                openTaskDetailGUI(player, task);
+                break;
+            }
+        }
+    }
+
+    /**
+     * 处理任务详情GUI点击事件
+     */
+    private void handleTaskDetailClick(Player player, ItemStack clickedItem, Task task) {
+        ItemMeta meta = clickedItem.getItemMeta();
+        if (meta == null) return;
+        
+        String displayName = ChatColor.stripColor(meta.getDisplayName());
+        
+        switch (displayName) {
+            case "完成任务":
+                if (task.getProgress() >= task.getTargetAmount()) {
+                    // 发放奖励
+                    if (plugin.getEconomyManager().isAvailable()) {
+                        plugin.getEconomyManager().deposit(player, task.getRewardMoney());
+                    }
+                    player.giveExp(task.getRewardExp());
+                    
+                    // 奖励任务积分
+                    int taskPoints = (int)(task.getRewardMoney() * 0.1);
+                    rewardTaskPoints(player, taskPoints);
+                    
+                    // 从任务列表中移除
+                    taskManager.completeTask(player.getUniqueId(), task.getTaskId());
+                    
+                    // 清理查看的任务
+                    playerViewingTasks.remove(player.getUniqueId());
+                    
+                    player.sendMessage(ChatColor.GREEN + "任务完成!");
+                    player.sendMessage(ChatColor.GREEN + "获得奖励: " + task.getRewardMoney() + "金币, " + 
+                                     task.getRewardExp() + "经验, " + taskPoints + "任务积分");
+                    player.closeInventory();
+                    openTaskGUI(player);
+                } else {
+                    player.sendMessage(ChatColor.RED + "任务尚未完成!");
+                }
+                break;
+                
+            case "放弃任务":
+                // 从任务列表中移除
+                taskManager.completeTask(player.getUniqueId(), task.getTaskId());
+                
+                // 清理查看的任务
+                playerViewingTasks.remove(player.getUniqueId());
+                
+                player.sendMessage(ChatColor.YELLOW + "你放弃了任务: " + task.getType().toString());
+                player.closeInventory();
+                openTaskGUI(player);
+                break;
+                
+            case "返回":
+                // 清理查看的任务
+                playerViewingTasks.remove(player.getUniqueId());
+                
+                player.closeInventory();
+                openPlayerTasksGUI(player);
+                break;
+        }
+    }
+
+    /**
+     * 打开任务详情GUI
+     */
+    private void openTaskDetailGUI(Player player, Task task) {
+        // 将任务存储到映射中
+        playerViewingTasks.put(player.getUniqueId(), task);
+        
+        Inventory gui = Bukkit.createInventory(null, 27, "任务详情");
+        
+        // 任务信息
+        ItemStack taskInfo = new ItemStack(getTaskMaterial(task.getType()));
+        ItemMeta infoMeta = taskInfo.getItemMeta();
+        if (infoMeta != null) {
+            infoMeta.setDisplayName(ChatColor.GOLD + task.getType().toString());
+            List<String> lore = Arrays.asList(
+                ChatColor.GRAY + "任务描述: " + task.getDescription(),
+                ChatColor.GRAY + "任务进度: " + task.getProgress() + "/" + task.getTargetAmount(),
+                "",
+                ChatColor.YELLOW + "奖励:",
+                ChatColor.GRAY + "  金币: " + task.getRewardMoney(),
+                ChatColor.GRAY + "  经验: " + task.getRewardExp(),
+                ChatColor.GRAY + "  积分: " + (int)(task.getRewardMoney() * 0.1)
+            );
+            infoMeta.setLore(lore);
+            taskInfo.setItemMeta(infoMeta);
+        }
+        gui.setItem(13, taskInfo);
+        
+        // 完成任务按钮（如果已完成）
+        if (task.getProgress() >= task.getTargetAmount()) {
+            ItemStack completeButton = new ItemStack(Material.EMERALD_BLOCK);
+            ItemMeta completeMeta = completeButton.getItemMeta();
+            if (completeMeta != null) {
+                completeMeta.setDisplayName(ChatColor.GREEN + "完成任务");
+                completeMeta.setLore(Arrays.asList(
+                    ChatColor.GRAY + "点击领取奖励",
+                    ChatColor.YELLOW + "金币: " + task.getRewardMoney(),
+                    ChatColor.YELLOW + "经验: " + task.getRewardExp(),
+                    ChatColor.YELLOW + "积分: " + (int)(task.getRewardMoney() * 0.1)
+                ));
+                completeButton.setItemMeta(completeMeta);
+            }
+            gui.setItem(11, completeButton);
+        }
+        
+        // 放弃任务按钮
+        ItemStack abandonButton = new ItemStack(Material.BARRIER);
+        ItemMeta abandonMeta = abandonButton.getItemMeta();
+        if (abandonMeta != null) {
+            abandonMeta.setDisplayName(ChatColor.RED + "放弃任务");
+            abandonMeta.setLore(Arrays.asList(
+                ChatColor.GRAY + "点击放弃此任务",
+                ChatColor.RED + "注意: 此操作不可撤销!"
+            ));
+            abandonButton.setItemMeta(abandonMeta);
+        }
+        gui.setItem(15, abandonButton);
+        
+        // 返回按钮
+        ItemStack backButton = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = backButton.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName(ChatColor.GRAY + "返回");
+            backButton.setItemMeta(backMeta);
+        }
+        gui.setItem(26, backButton);
+        
+        player.openInventory(gui);
     }
 
     /**

@@ -60,8 +60,121 @@ public class VillagerSkillManager {
      * @param exp      经验值
      */
     public void addVillagerSkillExp(Villager villager, ProfessionSkill skill, int exp) {
-        // 当前实现中，技能等级固定，未来可以扩展为经验系统
-        // 这里暂时留空，作为未来扩展的接口
+        // 获取当前技能等级
+        int currentLevel = getVillagerSkillLevel(villager, skill);
+        
+        // 检查是否已达到最高等级
+        if (currentLevel >= 5) {
+            // 已达到最高等级，通知所有者玩家
+            UUID ownerId = cn.popcraft.villagepro.util.VillagerUtils.getOwner(villager);
+            if (ownerId != null) {
+                org.bukkit.entity.Player owner = plugin.getServer().getPlayer(ownerId);
+                if (owner != null && owner.isOnline()) {
+                    String message = String.format(
+                        "&e你的村民 %s 的 %s 技能已达到最高等级!",
+                        villager.getCustomName() != null ? villager.getCustomName() : "村民",
+                        skill.getDisplayName()
+                    );
+                    owner.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
+                }
+            }
+            return; // 已达到最高等级，不再增加经验
+        }
+        
+        // 获取村民的技能经验映射
+        UUID villagerId = villager.getUniqueId();
+        Map<ProfessionSkill, Integer> skillExps = villagerSkills.computeIfAbsent(villagerId, 
+            k -> new EnumMap<>(ProfessionSkill.class));
+        
+        // 获取当前经验
+        int currentExp = skillExps.getOrDefault(skill, 0);
+        int newExp = currentExp + exp;
+        
+        // 计算升级所需经验（基于技能等级的指数增长公式）
+        // 公式：升级到下一级所需经验 = 100 * (当前等级^1.5) 向上取整到最接近的10的倍数
+        int expNeeded = (int) Math.ceil(100 * Math.pow(currentLevel, 1.5) / 10) * 10;
+        
+        // 确保最小经验值为100（1级升2级需要100经验）
+        if (currentLevel == 0) {
+            expNeeded = 100;
+        }
+        
+        // 检查是否可以升级
+        if (newExp >= expNeeded && expNeeded > 0) {
+            // 检查是否已达到最高等级（5级）
+            if (currentLevel >= 5) {
+                // 已达到最高等级，只更新经验到最大值
+                skillExps.put(skill, expNeeded);
+                
+                // 通知所有者玩家技能已满级
+                UUID ownerId = cn.popcraft.villagepro.util.VillagerUtils.getOwner(villager);
+                if (ownerId != null) {
+                    org.bukkit.entity.Player owner = plugin.getServer().getPlayer(ownerId);
+                    if (owner != null && owner.isOnline()) {
+                        String message = String.format(
+                            "&e你的村民 %s 的 %s 技能已达到最高等级!",
+                            villager.getCustomName() != null ? villager.getCustomName() : "村民",
+                            skill.getDisplayName()
+                        );
+                        owner.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
+                    }
+                }
+                return;
+            }
+            
+            // 升级技能
+            setVillagerSkillLevel(villager, skill, currentLevel + 1);
+            
+            // 应用新的技能效果
+            applySkillEffect(villager, skill, currentLevel + 1);
+            
+            // 重置经验（可以保留超出部分经验）
+            int remainingExp = newExp - expNeeded;
+            skillExps.put(skill, remainingExp);
+            
+            // 通知所有者玩家技能升级
+            UUID ownerId = cn.popcraft.villagepro.util.VillagerUtils.getOwner(villager);
+            if (ownerId != null) {
+                org.bukkit.entity.Player owner = plugin.getServer().getPlayer(ownerId);
+                if (owner != null && owner.isOnline()) {
+                    String message = String.format(
+                        "&a你的村民 %s 的 %s 技能已升级到 %d 级!",
+                        villager.getCustomName() != null ? villager.getCustomName() : "村民",
+                        skill.getDisplayName(),
+                        currentLevel + 1
+                    );
+                    owner.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
+                }
+            }
+        } else {
+            // 更新经验
+            skillExps.put(skill, newExp);
+            
+            // 通知玩家获得经验（仅当需要经验才能升级时）
+            if (expNeeded > 0) {
+                UUID ownerId = cn.popcraft.villagepro.util.VillagerUtils.getOwner(villager);
+                if (ownerId != null) {
+                    org.bukkit.entity.Player owner = plugin.getServer().getPlayer(ownerId);
+                    if (owner != null && owner.isOnline()) {
+                        // 计算当前等级已获得的经验和升级所需经验
+                        int expForCurrentLevel = currentLevel * 100; // 升到当前等级所需的总经验
+                        int expGainedForCurrentLevel = newExp - expForCurrentLevel; // 当前等级已获得的经验
+                        int expNeededForNextLevel = expNeeded - expForCurrentLevel; // 升到下一级还需的经验
+                        
+                        String message = String.format(
+                            "&7你的村民 %s 的 %s 技能获得了 %d 点经验! (当前等级: %d, 进度: %d/%d)",
+                            villager.getCustomName() != null ? villager.getCustomName() : "村民",
+                            skill.getDisplayName(),
+                            exp,
+                            currentLevel,
+                            expGainedForCurrentLevel,
+                            expNeededForNextLevel
+                        );
+                        owner.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
+                    }
+                }
+            }
+        }
     }
 
     /**
