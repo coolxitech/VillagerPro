@@ -47,7 +47,11 @@ public class ConfigManager {
                 try {
                     type = UpgradeType.valueOf(typeKey.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    plugin.getLogger().warning("未知的升级类型: " + typeKey);
+                    if (plugin.getMessageManager() != null) {
+                        plugin.getLogger().warning(plugin.getMessageManager().getMessage("config.invalid-upgrade-type", Map.of("type", typeKey)));
+                    } else {
+                        plugin.getLogger().warning("未知的升级类型: " + typeKey);
+                    }
                     continue;
                 }
                 
@@ -66,6 +70,7 @@ public class ConfigManager {
                                 upgrade.setLevel(level);
                                 upgrade.setCostMoney(upgradeSection.getDouble("cost-money", 0));
                                 upgrade.setCostDiamonds(upgradeSection.getInt("cost-diamonds", 0));
+                                upgrade.setCostPoints(upgradeSection.getInt("cost-points", 0)); // 添加点券成本读取
                                 
                                 // 加载升级所需物品
                                 Map<String, Integer> costItems = new HashMap<>();
@@ -81,7 +86,11 @@ public class ConfigManager {
                                 levelMap.put(level, upgrade);
                             }
                         } catch (NumberFormatException e) {
-                            plugin.getLogger().warning("无效的升级等级: " + levelKey);
+                            if (plugin.getMessageManager() != null) {
+                                plugin.getLogger().warning(plugin.getMessageManager().getMessage("config.invalid-upgrade-level", Map.of("level", levelKey)));
+                            } else {
+                                plugin.getLogger().warning("无效的升级等级: " + levelKey);
+                            }
                         }
                     }
                     

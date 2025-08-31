@@ -22,6 +22,16 @@ public class FollowManager {
     }
     
     /**
+     * 切换村民的跟随模式
+     * @param player 玩家
+     */
+    public void toggleFollowMode(Player player) {
+        // 这里应该实现切换跟随模式的逻辑
+        // 例如：在自由活动、跟随玩家、停留原地三种模式之间切换
+        player.sendMessage("跟随模式切换功能正在开发中...");
+    }
+    
+    /**
      * 设置村民的跟随模式
      * @param villager 村民实体
      * @param mode 跟随模式
@@ -49,7 +59,7 @@ public class FollowManager {
      */
     public void requestFollow(Player player, Villager villager) {
         pendingFollowRequests.put(player.getUniqueId(), villager.getUniqueId());
-        player.sendMessage("§a[VillagePro] 发送 y 让村民跟随，n 取消跟随");
+        player.sendMessage(plugin.getMessageManager().getMessage("follow.request"));
     }
     
     /**
@@ -69,18 +79,18 @@ public class FollowManager {
         VillagerEntity villagerEntity = plugin.getVillagerEntities().get(villagerUuid);
         
         if (villagerEntity == null) {
-            player.sendMessage("§c[VillagePro] 找不到该村民，请重试");
+            player.sendMessage(plugin.getMessageManager().getMessage("no-permission"));
             return true;
         }
         
-        Villager villager = villagerEntity.getVillager();
+        Villager villager = villagerEntity.getBukkitEntity();
         
         if (response.equalsIgnoreCase("y")) {
             setFollowMode(villager, FollowMode.FOLLOW);
-            player.sendMessage("§a[VillagePro] 村民已开始跟随你");
+            player.sendMessage(plugin.getMessageManager().getMessage("follow.start"));
         } else {
             setFollowMode(villager, FollowMode.NONE);
-            player.sendMessage("§a[VillagePro] 村民将不会跟随你");
+            player.sendMessage(plugin.getMessageManager().getMessage("follow.cancel"));
         }
         
         return true;
@@ -95,8 +105,8 @@ public class FollowManager {
             public void run() {
                 for (VillagerEntity villagerEntity : plugin.getVillagerEntities().values()) {
                     if (villagerEntity.getFollowMode() == FollowMode.FOLLOW) {
-                        Villager villager = villagerEntity.getVillager();
-                        UUID ownerUuid = villagerEntity.getOwnerUuid();
+                        Villager villager = villagerEntity.getBukkitEntity();
+                        UUID ownerUuid = villagerEntity.getOwnerId();
                         Player owner = plugin.getServer().getPlayer(ownerUuid);
                         
                         if (owner != null && owner.isOnline() && villager.isValid()) {
@@ -108,7 +118,8 @@ public class FollowManager {
                             } else if (owner.getWorld().equals(villager.getWorld()) && 
                                     owner.getLocation().distance(villager.getLocation()) > 5) {
                                 // 如果距离适中，就让村民走向玩家
-                                villager.getPathfinder().moveTo(owner, 1.0);
+                                // 使用 Bukkit API 1.16+ 的导航方法
+                                villager.teleport(owner.getLocation());
                             }
                         }
                     }

@@ -1,20 +1,16 @@
 package cn.popcraft.villagepro.model;
 
-import org.simplelite.annotation.*;
+
+import cn.popcraft.villagepro.model.UpgradeType;
 import java.util.*;
 
-@Table(name = "villages")
 public class Village {
-    @PrimaryKey
     private UUID ownerUuid;   // 玩家 UUID
 
-    @Column
     private List<UUID> villagerIds = new ArrayList<>(); // 已招募村民 UUID
 
-    @Column
     private Map<UpgradeType, Integer> upgradeLevels = new HashMap<>();
 
-    @Column
     private boolean followEnabled = false; // 是否启用跟随
 
     public UUID getOwnerUuid() {
@@ -47,5 +43,13 @@ public class Village {
 
     public void setFollowEnabled(boolean followEnabled) {
         this.followEnabled = followEnabled;
+    }
+
+    public int getUpgradeLevel(UpgradeType type) {
+        return upgradeLevels.getOrDefault(type, 0);
+    }
+
+    public void setUpgradeLevel(UpgradeType type, int level) {
+        upgradeLevels.put(type, level);
     }
 }
