@@ -25,12 +25,27 @@ public class PlayerPointsCompat {
      * 设置PlayerPoints系统
      */
     private void setupPlayerPoints() {
-        playerPointsPlugin = Bukkit.getPluginManager().getPlugin("PlayerPoints");
-        if (playerPointsPlugin != null && playerPointsPlugin.isEnabled()) {
-            available = true;
-            plugin.getLogger().log(Level.INFO, "成功连接到PlayerPoints插件");
-        } else {
-            plugin.getLogger().log(Level.WARNING, "未找到PlayerPoints插件，点券系统功能将不可用");
+        try {
+            playerPointsPlugin = Bukkit.getPluginManager().getPlugin("PlayerPoints");
+            if (playerPointsPlugin != null && playerPointsPlugin.isEnabled()) {
+                // 尝试验证API是否可访问
+                try {
+                    Object api = playerPointsPlugin.getClass().getMethod("getAPI").invoke(playerPointsPlugin);
+                    if (api != null) {
+                        available = true;
+                        plugin.getLogger().log(Level.INFO, "成功连接到PlayerPoints插件");
+                    } else {
+                        plugin.getLogger().log(Level.WARNING, "PlayerPoints插件已找到但API不可用，点券系统功能将不可用");
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().log(Level.WARNING, "PlayerPoints插件API访问失败: " + e.getMessage() + "，点券系统功能将不可用");
+                }
+            } else {
+                plugin.getLogger().log(Level.WARNING, "未找到PlayerPoints插件，点券系统功能将不可用");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "检查PlayerPoints插件时发生错误: " + e.getMessage() + "，点券系统功能将不可用");
+            available = false;
         }
     }
 
