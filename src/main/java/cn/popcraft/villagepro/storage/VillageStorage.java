@@ -2,6 +2,8 @@ package cn.popcraft.villagepro.storage;
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.Village;
+import cn.popcraft.villagepro.model.PlayerTaskData;
+import cn.popcraft.villagepro.model.Task;
 import com.google.gson.Gson;
 
 import java.io.File;
@@ -280,8 +282,37 @@ public class VillageStorage {
      * @param progress 进度
      */
     public void updateTaskProgress(UUID playerId, UUID taskId, int progress) {
-        // 在实际实现中，这里应该更新数据库中的任务进度
-        plugin.getLogger().info("更新任务进度: 玩家=" + playerId + ", 任务=" + taskId + ", 进度=" + progress);
+        try {
+            // 首先加载玩家的任务数据
+            String sql = "SELECT data FROM player_tasks WHERE id = ?";
+            try (PreparedStatement selectStmt = sqliteConnection.prepareStatement(sql)) {
+                selectStmt.setString(1, playerId.toString());
+                try (ResultSet rs = selectStmt.executeQuery()) {
+                    if (rs.next()) {
+                        String jsonData = rs.getString("data");
+                        PlayerTaskData taskData = gson.fromJson(jsonData, PlayerTaskData.class);
+                        if (taskData != null) {
+                            // 更新任务进度
+                            Task task = taskData.getTaskById(taskId);
+                            if (task != null) {
+                                task.setProgress(progress);
+                                
+                                // 保存更新后的数据
+                                String updatedJson = gson.toJson(taskData);
+                                String updateSql = "INSERT OR REPLACE INTO player_tasks(id, data) VALUES(?,?)";
+                                try (PreparedStatement updateStmt = sqliteConnection.prepareStatement(updateSql)) {
+                                    updateStmt.setString(1, playerId.toString());
+                                    updateStmt.setString(2, updatedJson);
+                                    updateStmt.executeUpdate();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "更新任务进度失败: 玩家=" + playerId + ", 任务=" + taskId + ", 进度=" + progress, e);
+        }
     }
     
     /**
@@ -290,8 +321,34 @@ public class VillageStorage {
      * @param taskId 任务ID
      */
     public void completeTask(UUID playerId, UUID taskId) {
-        // 在实际实现中，这里应该标记任务为已完成
-        plugin.getLogger().info("完成任务: 玩家=" + playerId + ", 任务=" + taskId);
+        try {
+            // 首先加载玩家的任务数据
+            String sql = "SELECT data FROM player_tasks WHERE id = ?";
+            try (PreparedStatement selectStmt = sqliteConnection.prepareStatement(sql)) {
+                selectStmt.setString(1, playerId.toString());
+                try (ResultSet rs = selectStmt.executeQuery()) {
+                    if (rs.next()) {
+                        String jsonData = rs.getString("data");
+                        PlayerTaskData taskData = gson.fromJson(jsonData, PlayerTaskData.class);
+                        if (taskData != null) {
+                            // 移除已完成的任务
+                            taskData.removeTask(taskId);
+                            
+                            // 保存更新后的数据
+                            String updatedJson = gson.toJson(taskData);
+                            String updateSql = "INSERT OR REPLACE INTO player_tasks(id, data) VALUES(?,?)";
+                            try (PreparedStatement updateStmt = sqliteConnection.prepareStatement(updateSql)) {
+                                updateStmt.setString(1, playerId.toString());
+                                updateStmt.setString(2, updatedJson);
+                                updateStmt.executeUpdate();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "完成任务失败: 玩家=" + playerId + ", 任务=" + taskId, e);
+        }
     }
     
     /**
@@ -299,8 +356,27 @@ public class VillageStorage {
      * @param clazz 数据模型类
      */
     public <T> void registerTable(Class<T> clazz) {
-        // 在实际实现中，这里应该注册数据表
-        plugin.getLogger().info("注册数据表: " + clazz.getSimpleName());
+        String tableName = getTableName(clazz);
+        String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " ("
+                + "id TEXT PRIMARY KEY, "
+                + "data TEXT)";
+        
+        try (Statement stmt = sqliteConnection.createStatement()) {
+            stmt.execute(sql);
+            plugin.getLogger().info("数据表 " + tableName + " 初始化完成");
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "创建数据表失败: " + tableName, e);
+        }
+    }
+    
+    /**
+     * 根据类名获取表名
+     * @param clazz 类
+     * @return 表名
+     */
+    private <T> String getTableName(Class<T> clazz) {
+        // 使用类名的小写形式作为表名
+        return clazz.getSimpleName().toLowerCase();
     }
     
     /**
@@ -310,9 +386,23 @@ public class VillageStorage {
      * @return 数据集合
      */
     public <T> Collection<T> findAll(Class<T> clazz, String tableName) {
-        // 在实际实现中，这里应该从数据库加载所有指定类型的数据
-        plugin.getLogger().info("查找所有数据: 类型=" + clazz.getSimpleName() + ", 表名=" + tableName);
-        return new ArrayList<>();
+        String sql = "SELECT data FROM " + tableName;
+        try (Statement stmt = sqliteConnection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            Collection<T> results = new ArrayList<>();
+            while (rs.next()) {
+                String jsonData = rs.getString("data");
+                T obj = gson.fromJson(jsonData, clazz);
+                if (obj != null) {
+                    results.add(obj);
+                }
+            }
+            return results;
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "查找所有数据失败: 类型=" + clazz.getSimpleName() + ", 表名=" + tableName, e);
+            return new ArrayList<>();
+        }
     }
     
     /**
@@ -322,8 +412,17 @@ public class VillageStorage {
      * @param tableName 表名
      */
     public <T> void saveWithId(T data, String id, String tableName) {
-        // 在实际实现中，这里应该将数据保存到指定表中
-        plugin.getLogger().info("保存数据: 类型=" + data.getClass().getSimpleName() + ", ID=" + id + ", 表名=" + tableName);
+        try {
+            String json = gson.toJson(data);
+            String sql = "INSERT OR REPLACE INTO " + tableName + "(id, data) VALUES(?,?)";
+            try (PreparedStatement stmt = sqliteConnection.prepareStatement(sql)) {
+                stmt.setString(1, id);
+                stmt.setString(2, json);
+                stmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "保存数据失败: 类型=" + data.getClass().getSimpleName() + ", ID=" + id + ", 表名=" + tableName, e);
+        }
     }
     
     /**

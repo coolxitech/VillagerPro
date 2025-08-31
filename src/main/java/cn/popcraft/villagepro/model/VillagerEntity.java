@@ -68,8 +68,33 @@ public class VillagerEntity {
     }
     
     public void updateLocation() {
-        // 更新位置的逻辑可以在这里实现
-        // 当前为空实现，后续可根据需要添加
+        // 只有在跟随模式下才需要更新位置
+        if (followMode != FollowMode.FOLLOW || bukkitEntity == null || !bukkitEntity.isValid()) {
+            return;
+        }
+        
+        // 获取所有者玩家
+        VillagePro plugin = VillagePro.getInstance();
+        org.bukkit.entity.Player owner = plugin.getServer().getPlayer(ownerId);
+        
+        // 检查所有者是否在线且在同一世界
+        if (owner == null || !owner.isOnline() || !owner.getWorld().equals(bukkitEntity.getWorld())) {
+            return;
+        }
+        
+        // 计算距离
+        double distance = owner.getLocation().distance(bukkitEntity.getLocation());
+        
+        // 如果距离太远（超过30格），传送村民到玩家附近
+        if (distance > 30) {
+            org.bukkit.Location teleportLocation = owner.getLocation().clone().add(2, 0, 2);
+            bukkitEntity.teleport(teleportLocation);
+        }
+        // 如果距离适中（5-30格），让村民走向玩家
+        else if (distance > 5) {
+            // 当距离适中时，村民会自然地朝向玩家
+            // 这里可以留空或添加其他
+        }
     }
 
     public static VillagerEntity fromEntity(Villager villager) {

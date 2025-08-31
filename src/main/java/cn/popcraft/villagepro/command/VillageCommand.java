@@ -60,8 +60,13 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
                 if (args.length > 2) {
                     try {
                         UpgradeType type = UpgradeType.valueOf(args[1].toUpperCase());
-                        // 这里应该使用第二个参数作为等级，但目前插件设计是逐级升级
-                        plugin.getVillageManager().upgradeVillage(player, type);
+                        // 使用第二个参数作为目标等级
+                        int targetLevel = Integer.parseInt(args[2]);
+                        if (targetLevel > 0 && targetLevel <= 5) {
+                            upgradeToLevel(player, type, targetLevel);
+                        } else {
+                            player.sendMessage(messageManager.getMessage("help.invalid-usage"));
+                        }
                     } catch (IllegalArgumentException e) {
                         player.sendMessage(messageManager.getMessage("help.invalid-usage"));
                     }
@@ -99,26 +104,81 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
      */
     private void showVillageInfo(Player player) {
         Village village = plugin.getVillageManager().getVillage(player.getUniqueId());
-        
         if (village == null) {
             player.sendMessage(messageManager.getMessage("village.not-found"));
             return;
         }
+
+        player.sendMessage(messageManager.getMessage("village.info.header"));
+        for (UpgradeType type : UpgradeType.values()) {
+            int level = village.getUpgradeLevel(type);
+            Map<String, String> replacements = new HashMap<>();
+            replacements.put("type", messageManager.getMessage("upgrade-types." + type.name()));
+            replacements.put("level", String.valueOf(level));
+            player.sendMessage(messageManager.getMessage("village.info.upgrade", replacements));
+        }
+    }
+    
+    /**
+     * 升级村庄到指定等级
+     * @param player 玩家
+     * @param type 升级类型
+     * @param targetLevel 目标等级
+     */
+    private void upgradeToLevel(Player player, UpgradeType type, int targetLevel) {
+        // 获取或创建村庄
+        Village village = plugin.getVillageManager().getOrCreateVillage(player);
         
-        // 发送村庄信息标题
-        player.sendMessage("§a===== 村庄信息 =====");
+        // 获取当前等级
+        int currentLevel = village.getUpgradeLevel(type);
         
-        // 显示村民数量
-        int villagerCount = village.getVillagerIds().size();
-        player.sendMessage("§e村民数量: §f" + villagerCount);
+        // 检查目标等级是否有效
+        if (targetLevel <= currentLevel) {
+            player.sendMessage(plugin.getMessageManager().getMessage("upgrade.invalid-level"));
+            return;
+        }
         
-        // 显示升级信息
-        player.sendMessage("§e村庄升级:");
-        for (Map.Entry<UpgradeType, Integer> entry : village.getUpgradeLevels().entrySet()) {
-            UpgradeType type = entry.getKey();
-            int level = entry.getValue();
-            String typeName = messageManager.getMessage("upgrade-types." + type.name(), new HashMap<>());
-            player.sendMessage("  §7- §f" + typeName + ": §e" + level);
+        boolean success = true;
+        
+        // 逐级升级到目标等级
+        for (int level = currentLevel + 1; level <= targetLevel; level++) {
+            // 检查是否已达到最高等级
+            if (level > 5) {
+                player.sendMessage(plugin.getMessageManager().getMessage("upgrade.max-level-reached"));
+                break;
+            }
+            
+            // 获取升级配置
+            cn.popcraft.villagepro.model.Upgrade upgrade = plugin.getConfigManager().getUpgrade(type, level);
+            if (upgrade == null) {
+                player.sendMessage(plugin.getMessageManager().getMessage("upgrade.failed"));
+                success = false;
+                break;
+            }
+            
+            // 检查资源是否足够
+            if (!plugin.getVillageManager().hasEnoughUpgradeResources(player, upgrade)) {
+                player.sendMessage(plugin.getMessageManager().getMessage("upgrade.failed"));
+                success = false;
+                break;
+            }
+            
+            // 消耗资源
+            plugin.getVillageManager().consumeUpgradeResources(player, upgrade);
+            
+            // 更新升级等级
+            village.setUpgradeLevel(type, level);
+            
+            // 发送升级消息
+            Map<String, String> replacements = new HashMap<>();
+            replacements.put("type", plugin.getMessageManager().getMessage("upgrade-types." + type.name()));
+            replacements.put("level", String.valueOf(level));
+            player.sendMessage(plugin.getMessageManager().getMessage("upgrade.success", replacements));
+        }
+        
+        if (success) {
+            // 保存村庄数据
+            plugin.getVillageManager().saveVillage(village);
         }
     }
     

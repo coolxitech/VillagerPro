@@ -10,6 +10,7 @@ public class PlayerTaskData {
     private UUID playerUuid;
     private Task currentTask;
     private Map<UUID, Task> activeTasks = new HashMap<>();
+    private int taskPoints = 0; // 添加任务积分字段
 
     public UUID getPlayerUuid() {
         return playerUuid;
@@ -43,5 +44,18 @@ public class PlayerTaskData {
         if (currentTask != null && currentTask.getTaskId().equals(taskId)) {
             currentTask = null;
         }
+    }
+
+    // 添加任务积分相关方法
+    public int getTaskPoints() {
+        return taskPoints;
+    }
+
+    public void setTaskPoints(int taskPoints) {
+        this.taskPoints = taskPoints;
+    }
+
+    public void addTaskPoints(int points) {
+        this.taskPoints += points;
     }
 }

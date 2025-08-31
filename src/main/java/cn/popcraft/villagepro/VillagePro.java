@@ -35,6 +35,7 @@ public final class VillagePro extends JavaPlugin {
     private VillagerSkillManager villagerSkillManager;
     private FollowManager followManager;
     private EconomyManager economyManager;
+    private QuestsIntegrationManager questsIntegrationManager; // 添加Quests集成管理器
 
     // GUIs
     private ProductionGUI productionGUI;
@@ -72,6 +73,7 @@ public final class VillagePro extends JavaPlugin {
         this.villagerSkillManager = new VillagerSkillManager(this);
         this.followManager = new FollowManager(this);
         this.economyManager = new EconomyManager(this);
+        this.questsIntegrationManager = new QuestsIntegrationManager(this); // 初始化Quests集成管理器
         
         // 加载所有村庄数据
         this.villageManager.loadAll();
@@ -162,6 +164,14 @@ public final class VillagePro extends JavaPlugin {
     
     public FollowManager getFollowManager() {
         return followManager;
+    }
+    
+    /**
+     * 获取Quests集成管理器
+     * @return Quests集成管理器实例
+     */
+    public QuestsIntegrationManager getQuestsIntegrationManager() {
+        return questsIntegrationManager;
     }
     
     public TaskManager getTaskManager() {
