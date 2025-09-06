@@ -76,24 +76,22 @@ jobs:
           if-no-files-found: error # 如果文件不存在，报错
 
       - name: 调试 Release 触发条件
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
         run: |
           echo "Release 触发条件满足"
           echo "事件名称: ${{ github.event_name }}"
           echo "引用: ${{ github.ref }}"
           echo "手动输入标签: ${{ github.event.inputs.tag }}"
-          echo "最终标签: ${{ github.event.inputs.tag || env.PROJECT_VERSION }}"
-          echo "JAR 文件路径: build/libs/${{ env.PLUGIN_NAME }}-${{ env.PROJECT_VERSION }}.jar"
-          ls -l build/libs/ || echo "build/libs/ 目录为空"
+          echo "最终标签: ${{ github.event.inputs.tag != '' && github.event.inputs.tag || env.PROJECT_VERSION }}"
         shell: bash
 
       - name: 创建并上传到 GitHub Release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag || env.PROJECT_VERSION }}
-          name: ${{ env.PLUGIN_NAME }} v${{ github.event.inputs.tag || env.PROJECT_VERSION }}
+          tag_name: ${{ github.event.inputs.tag != '' && github.event.inputs.tag || env.PROJECT_VERSION }}
+          name: ${{ env.PLUGIN_NAME }} v${{ github.event.inputs.tag != '' && github.event.inputs.tag || env.PROJECT_VERSION }}
           files: build/libs/${{ env.PLUGIN_NAME }}-${{ env.PROJECT_VERSION }}.jar
-          fail_on_unmatched_files: true # 如果文件不存在，报错
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
