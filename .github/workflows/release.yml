@@ -22,23 +22,46 @@ jobs:
 
     steps:
       - name: 检出代码仓库
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
-      - name: 安装 JDK 17
+      - name: 设置 JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 安装 Gradle
+      - name: 设置 Gradle 9.0
         uses: gradle/actions/setup-gradle@v4
 
       - name: 获取项目版本和名称
         id: get_properties
         run: |
-          VERSION=$(gradle properties --no-daemon --console=plain -q | grep "^version:" | awk '{print $2}')
+          # 从 build.gradle 或 gradle.properties 获取版本号
+          if [ -f "build.gradle" ]; then
+            VERSION=$(grep -E '^\s*version\s*=' build.gradle | awk -F '=' '{print $2}' | tr -d ' "')
+          elif [ -f "gradle.properties" ]; then
+            VERSION=$(grep -E '^\s*version\s*=' gradle.properties | awk -F '=' '{print $2}' | tr -d ' ')
+          else
+            echo "错误：未找到 build.gradle 或 gradle.properties" >&2
+            exit 1
+          fi
+          if [ -z "$VERSION" ] || [ "$VERSION" = "unspecified" ]; then
+            echo "错误：未在 build.gradle 或 gradle.properties 中定义版本号" >&2
+            exit 1
+          fi
           echo "PROJECT_VERSION=$VERSION" >> $GITHUB_ENV
-          NAME=$(gradle properties --no-daemon --console=plain -q | grep "^rootProject.name:" | awk '{print $2}')
+          
+          # 从 settings.gradle 获取项目名称
+          if [ -f "settings.gradle" ]; then
+            NAME=$(grep -E '^\s*rootProject.name\s*=' settings.gradle | awk -F '=' '{print $2}' | tr -d ' "')
+          else
+            echo "警告：未找到 settings.gradle，使用仓库名称 ${{ github.event.repository.name }}" >&2
+            NAME="${{ github.event.repository.name }}"
+          fi
+          if [ -z "$NAME" ] || [ "$NAME" = "unspecified" ]; then
+            echo "警告：未在 settings.gradle 中定义 rootProject.name，使用仓库名称 ${{ github.event.repository.name }}" >&2
+            NAME="${{ github.event.repository.name }}"
+          fi
           echo "PLUGIN_NAME=$NAME" >> $GITHUB_ENV
         shell: bash
 
@@ -64,4 +87,4 @@ jobs:
           name: ${{ env.PLUGIN_NAME }} v${{ github.event.inputs.tag || env.PROJECT_VERSION }}
           files: build/libs/${{ env.PLUGIN_NAME }}-${{ env.PROJECT_VERSION }}.jar
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB
