@@ -41,12 +41,12 @@ jobs:
         run: |
           # 从 build.gradle 或 gradle.properties 获取版本号
           if [ -f "build.gradle" ]; then
-            VERSION=$(grep -E '^\s*version\s*=' build.gradle | awk -F '=' '{print $2}' | tr -d ' "')
+          VERSION=$(grep -E '^\s*version\s*=' build.gradle | awk -F '=' '{print $2}' | tr -d " '\"")
           elif [ -f "gradle.properties" ]; then
-            VERSION=$(grep -E '^\s*version\s*=' gradle.properties | awk -F '=' '{print $2}' | tr -d ' ')
+          VERSION=$(grep -E '^\s*version\s*=' gradle.properties | awk -F '=' '{print $2}' | tr -d " '\"")
           else
-            echo "错误：未找到 build.gradle 或 gradle.properties" >&2
-            exit 1
+          echo "错误：未找到 build.gradle 或 gradle.properties" >&2
+          exit 1
           fi
           if [ -z "$VERSION" ] || [ "$VERSION" = "unspecified" ]; then
             echo "错误：未在 build.gradle 或 gradle.properties 中定义版本号" >&2
