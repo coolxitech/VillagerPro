@@ -21,8 +21,13 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    - name: 设置 Gradle
+      uses: gradle/gradle-build-action@v3
+      with:
+        gradle-version: 9.0 # 指定 Gradle 版本，适配现代 Minecraft 插件开发
+
     - name: 使用 Gradle 构建
-      run: ./gradlew build
+      run: gradle build
 
     - name: 上传构建产物
       uses: actions/upload-artifact@v4
