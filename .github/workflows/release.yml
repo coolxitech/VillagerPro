@@ -87,4 +87,4 @@ jobs:
           name: ${{ env.PLUGIN_NAME }} v${{ github.event.inputs.tag || env.PROJECT_VERSION }}
           files: build/libs/${{ env.PLUGIN_NAME }}-${{ env.PROJECT_VERSION }}.jar
         env:
-          GITHUB
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
