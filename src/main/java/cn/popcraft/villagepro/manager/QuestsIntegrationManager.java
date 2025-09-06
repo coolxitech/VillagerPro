@@ -30,18 +30,37 @@ public class QuestsIntegrationManager {
             Plugin questsPlugin = Bukkit.getPluginManager().getPlugin("Quests");
             if (questsPlugin != null && questsPlugin.isEnabled()) {
                 // 尝试获取Quests API
-                Method getQuestsAPIMethod = questsPlugin.getClass().getMethod("getAPI");
-                questsApi = getQuestsAPIMethod.invoke(questsPlugin);
+                try {
+                    Method getQuestsAPIMethod = questsPlugin.getClass().getMethod("getAPI");
+                    questsApi = getQuestsAPIMethod.invoke(questsPlugin);
+                } catch (NoSuchMethodException e) {
+                    // 尝试其他可能的API方法名
+                    try {
+                        Method getQuestsAPIMethod = questsPlugin.getClass().getMethod("getApi");
+                        questsApi = getQuestsAPIMethod.invoke(questsPlugin);
+                    } catch (NoSuchMethodException ex) {
+                        // 尝试直接获取API字段
+                        try {
+                            java.lang.reflect.Field apiField = questsPlugin.getClass().getDeclaredField("api");
+                            apiField.setAccessible(true);
+                            questsApi = apiField.get(questsPlugin);
+                        } catch (Exception exx) {
+                            plugin.getLogger().log(Level.WARNING, "无法获取Quests API: " + exx.getMessage());
+                        }
+                    }
+                }
                 
                 if (questsApi != null) {
                     questsAvailable = true;
                     plugin.getLogger().info("成功集成Quests插件，将使用Quests任务系统");
+                } else {
+                    plugin.getLogger().info("检测到Quests插件但无法获取API，将使用内置任务系统");
                 }
             } else {
                 plugin.getLogger().info("未检测到Quests插件，将使用内置任务系统");
             }
         } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "初始化Quests集成时出错: " + e.getMessage());
+            plugin.getLogger().log(Level.WARNING, "初始化Quests集成时出错: " + e.getMessage() + "，将使用内置任务系统");
             questsAvailable = false;
         }
     }

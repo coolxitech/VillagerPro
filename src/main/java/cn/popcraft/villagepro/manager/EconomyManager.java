@@ -38,25 +38,31 @@ public class EconomyManager {
         }
 
         // 尝试获取经济服务
-        RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
-        if (rsp == null) {
-            plugin.getLogger().warning("未找到经济系统提供商，经济系统将不可用");
+        try {
+            RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
+            if (rsp == null) {
+                plugin.getLogger().warning("未找到经济系统提供商，经济系统将不可用");
+                return false;
+            }
+
+            economy = rsp.getProvider();
+            
+            // 检查是否为CMI经济系统
+            String economyName = economy.getName();
+            if (economyName != null) {
+                cmiEconomySupported = economyName.contains("CMI");
+                plugin.getLogger().info("经济系统已启用: " + economyName + 
+                    (cmiEconomySupported ? " (检测到CMI经济系统)" : ""));
+            } else {
+                plugin.getLogger().info("经济系统已启用");
+            }
+            
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().warning("设置经济系统时发生错误: " + e.getMessage() + "，经济系统将不可用");
+            economy = null;
             return false;
         }
-
-        economy = rsp.getProvider();
-        
-        // 检查是否为CMI经济系统
-        String economyName = economy.getName();
-        if (economyName != null) {
-            cmiEconomySupported = economyName.contains("CMI");
-            plugin.getLogger().info("经济系统已启用: " + economyName + 
-                (cmiEconomySupported ? " (检测到CMI经济系统)" : ""));
-        } else {
-            plugin.getLogger().info("经济系统已启用");
-        }
-        
-        return true;
     }
 
     /**

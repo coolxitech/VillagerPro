@@ -57,14 +57,17 @@ public final class VillagePro extends JavaPlugin {
         // 保存默认配置文件
         saveDefaultConfig();
         
-        // 初始化存储
-        villageStorage = new VillageStorage(this, gson);
-        
         // 初始化配置管理器
         this.configManager = new ConfigManager(this);
         
         // 初始化消息管理器
         this.messageManager = new MessageManager(this);
+        
+        // 初始化存储
+        villageStorage = new VillageStorage(this, gson);
+        
+        // 初始化经济管理器
+        this.economyManager = new EconomyManager(this);
         
         // 初始化其他管理器
         this.villageManager = new VillageManager(this);
@@ -72,7 +75,6 @@ public final class VillagePro extends JavaPlugin {
         this.taskManager = new TaskManager(this);
         this.villagerSkillManager = new VillagerSkillManager(this);
         this.followManager = new FollowManager(this);
-        this.economyManager = new EconomyManager(this);
         this.questsIntegrationManager = new QuestsIntegrationManager(this); // 初始化Quests集成管理器
         
         // 加载所有村庄数据
