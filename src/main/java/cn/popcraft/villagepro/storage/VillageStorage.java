@@ -54,19 +54,123 @@ public class VillageStorage {
      * 初始化数据库表
      */
     private void initializeTables() {
-        String sql = "CREATE TABLE IF NOT EXISTS villages ("
+        String villagesSql = "CREATE TABLE IF NOT EXISTS villages ("
                 + "id TEXT PRIMARY KEY, "
                 + "ownerUuid TEXT, "
                 + "data TEXT)";
         
+        String cropsSql = "CREATE TABLE IF NOT EXISTS crops ("
+                + "id TEXT PRIMARY KEY, "
+                + "data TEXT)";
+        
+        String tasksSql = "CREATE TABLE IF NOT EXISTS player_tasks ("
+                + "id TEXT PRIMARY KEY, "
+                + "data TEXT)";
+        
         try (Statement stmt = sqliteConnection.createStatement()) {
-            stmt.execute(sql);
-            plugin.getLogger().info("村庄数据表初始化完成");
+            stmt.execute(villagesSql);
+            stmt.execute(cropsSql);
+            stmt.execute(tasksSql);
+            
+            // 检查并升级表结构（兼容旧版本）
+            upgradeTableStructure(stmt);
+            
+            plugin.getLogger().info("所有数据表初始化完成");
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "创建数据库表失败", e);
         }
     }
+    
+    /**
+     * 升级表结构以兼容旧版本
+     * @param stmt 数据库语句对象
+     * @throws SQLException SQL异常
+     */
+    private void upgradeTableStructure(Statement stmt) throws SQLException {
+        // 检查villages表结构是否需要升级
+        try {
+            // 尝试查询新的表结构
+            stmt.executeQuery("SELECT id, ownerUuid, data FROM villages LIMIT 0");
+        } catch (SQLException e) {
+            // 如果查询失败，说明表结构不匹配，需要升级
+            plugin.getLogger().info("检测到旧版数据库结构，正在进行升级...");
+            
+            try {
+                // 检查是否存在旧表结构
+                ResultSet rs = stmt.executeQuery("PRAGMA table_info(villages)");
+                boolean hasIdColumn = false;
+                boolean hasOwnerUuidColumn = false;
+                boolean hasDataColumn = false;
+                
+                while (rs.next()) {
+                    String columnName = rs.getString("name");
+                    if ("id".equals(columnName)) {
+                        hasIdColumn = true;
+                    } else if ("ownerUuid".equals(columnName)) {
+                        hasOwnerUuidColumn = true;
+                    } else if ("data".equals(columnName)) {
+                        hasDataColumn = true;
+                    }
+                }
+                
+                // 如果缺少id列，则需要升级表结构
+                if (!hasIdColumn) {
+                    // 检查旧表结构
+                    try {
+                        stmt.executeQuery("SELECT ownerUuid, data FROM villages_old LIMIT 0");
+                        // 如果存在villages_old表，则从该表迁移数据
+                        stmt.execute("DROP TABLE villages");
+                        stmt.execute("ALTER TABLE villages_old RENAME TO villages");
+                        plugin.getLogger().info("从备份表恢复村庄数据表结构");
+                    } catch (SQLException ex) {
+                        // 旧表不存在，创建新表
+                        stmt.execute("DROP TABLE villages");
+                        
+                        String newVillagesSql = "CREATE TABLE villages (" +
+                                "id TEXT PRIMARY KEY, " +
+                                "ownerUuid TEXT, " +
+                                "data TEXT)";
+                        stmt.execute(newVillagesSql);
+                        
+                        plugin.getLogger().info("重新创建村庄数据表");
+                    }
+                } else if (!hasOwnerUuidColumn) {
+                    // 如果有id列但没有ownerUuid列
+                    stmt.execute("ALTER TABLE villages ADD COLUMN ownerUuid TEXT");
+                    plugin.getLogger().info("村庄数据表结构已更新，添加了ownerUuid列");
+                }
+                
+                plugin.getLogger().info("村庄数据表结构升级完成");
+            } catch (SQLException upgradeException) {
+                plugin.getLogger().log(Level.WARNING, "升级村庄数据表结构时发生错误，建议备份数据后删除数据库文件重新生成", upgradeException);
+            }
+        }
+        
+        // 类似地处理其他表的结构检查
+        checkAndUpgradeOtherTables(stmt);
+    }
 
+    /**
+     * 检查并升级其他表结构
+     * @param stmt 数据库语句对象
+     * @throws SQLException SQL异常
+     */
+    private void checkAndUpgradeOtherTables(Statement stmt) throws SQLException {
+        // 检查crops表
+        try {
+            stmt.executeQuery("SELECT id, data FROM crops LIMIT 0");
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "作物数据表结构检查失败，可能需要手动修复");
+        }
+
+        // 检查player_tasks表
+        try {
+            stmt.executeQuery("SELECT id, data FROM player_tasks LIMIT 0");
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "任务数据表结构检查失败，可能需要手动修复");
+        }
+    }
+    
     /**
      * 保存村庄数据
      *
@@ -95,9 +199,9 @@ public class VillageStorage {
     private void saveToSQLite(Village village, String json) throws SQLException {
         String sql = "INSERT OR REPLACE INTO villages(id, ownerUuid, data) VALUES(?,?,?)";
         try (PreparedStatement stmt = sqliteConnection.prepareStatement(sql)) {
-            stmt.setString(1, village.getOwnerUuid().toString());
-            stmt.setString(2, village.getOwnerUuid().toString());
-            stmt.setString(3, json);
+            stmt.setString(1, village.getOwnerUuid().toString()); // id列
+            stmt.setString(2, village.getOwnerUuid().toString()); // ownerUuid列
+            stmt.setString(3, json); // data列
             stmt.executeUpdate();
         }
     }

@@ -1,4 +1,4 @@
-package cn.popcraft.villagepro.listener;
+package cn.popcraft.villagepro.listener;// 已弃用
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.TaskManager;
@@ -22,11 +22,11 @@ import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerLevelChangeEvent;
+
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
-import org.bukkit.event.player.PlayerExpChangeEvent;
+
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.ChatColor;
 

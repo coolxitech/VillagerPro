@@ -1,22 +1,27 @@
 package cn.popcraft.villagepro;
 
 import cn.popcraft.villagepro.command.*;
+import cn.popcraft.villagepro.config.ConfigManager;
 import cn.popcraft.villagepro.gui.ProductionGUI;
 import cn.popcraft.villagepro.gui.TaskGUI;
 import cn.popcraft.villagepro.gui.UpgradeGUI;
 import cn.popcraft.villagepro.listener.*;
 import cn.popcraft.villagepro.manager.*;
+import cn.popcraft.villagepro.model.Village;
 import cn.popcraft.villagepro.model.VillagerEntity;
+import cn.popcraft.villagepro.storage.SQLiteStorage;
 import cn.popcraft.villagepro.storage.VillageStorage;
+import cn.popcraft.villagepro.util.ItemNameUtil;
 import cn.popcraft.villagepro.util.VillagerUtils;
 import com.google.gson.Gson;
-import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
-import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.event.Listener;
+import org.bukkit.event.EventPriority;
+import org.bukkit.plugin.EventExecutor;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,7 +51,7 @@ public final class VillagePro extends JavaPlugin {
     private VillageStorage villageStorage;
     
     // Villager entities map
-    private final Map<UUID, VillagerEntity> villagerEntities = new HashMap<>();
+    private final Map<UUID, VillagerEntity> villagerEntities = new HashMap<UUID, VillagerEntity>();
     private final Gson gson = new Gson();
     private final Random random = new Random();
     
@@ -65,6 +70,17 @@ public final class VillagePro extends JavaPlugin {
         
         // 初始化存储
         villageStorage = new VillageStorage(this, gson);
+        
+        // 确保数据库表已初始化
+        try {
+            // 手动触发表初始化
+            java.lang.reflect.Method initMethod = villageStorage.getClass().getDeclaredMethod("initializeTables");
+            initMethod.setAccessible(true);
+            initMethod.invoke(villageStorage);
+            getLogger().info("数据库表初始化完成");
+        } catch (Exception e) {
+            getLogger().warning("手动初始化数据库表时发生错误: " + e.getMessage());
+        }
         
         // 初始化经济管理器
         this.economyManager = new EconomyManager(this);
@@ -105,10 +121,23 @@ public final class VillagePro extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new GUIListener(this), this);
         Bukkit.getPluginManager().registerEvents(new SkillListener(this), this);
         Bukkit.getPluginManager().registerEvents(new VillageProTaskListener(this, taskManager), this);
+
+        // 注册 Quests 事件监听器（如果 Quests 插件已加载）
+        if (getServer().getPluginManager().isPluginEnabled("Quests")) {
+            try {
+                registerQuestsEventListener();
+                getLogger().info("已注册 Quests 任务完成监听器");
+            } catch (Exception e) {
+                getLogger().warning("注册 Quests 事件监听器时出错: " + e.getMessage());
+            }
+        }
         
         // 启动定时任务
         startVillagerFollowTask();
         startAutoSaveTask();
+
+        // 物品名称映射初始化
+        ItemNameUtil.init(this);
         
         getLogger().info("VillagePro 已启用!");
     }
@@ -229,19 +258,104 @@ public final class VillagePro extends JavaPlugin {
         }, 20L, 20L); // 每秒更新一次
     }
     
-    // 启动自动保存任务
+    /**
+     * 启动自动保存任务
+     */
     private void startAutoSaveTask() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-            // 保存所有村庄数据
-            getVillageManager().saveAll();
+        // 每30分钟保存一次数据
+        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            villageManager.saveAll();
+            taskManager.saveAll();
+            getLogger().info("数据已自动保存");
+        }, 36000L, 36000L); // 36000 ticks = 30 minutes
+    }
+    
+    /**
+     * 注册 Quests 事件监听器
+     */
+    private void registerQuestsEventListener() {
+        try {
+            // 动态注册 Quests 事件监听器
+            Class<?> questCompleteEventClass = Class.forName("me.pikamug.quests.events.QuestCompleteEvent");
+            Class<?> questerClass = Class.forName("me.pikamug.quests.player.Quester");
+            Class<?> questClass = Class.forName("me.pikamug.quests.quests.Quest");
             
-            // 保存所有任务数据
-            getTaskManager().saveAll();
+            // 创建监听器实例
+            Listener questsListener = new Listener() {};
             
-            // 保存所有作物数据
-            getCropManager().saveAll();
+            // 创建事件执行器
+            EventExecutor eventExecutor = new EventExecutor() {
+                @Override
+                public void execute(Listener listener, org.bukkit.event.Event event) throws org.bukkit.event.EventException {
+                    try {
+                        // 获取 Quester (玩家) 对象
+                        Object quester = event.getClass().getMethod("getQuester").invoke(event);
+                        String playerName = (String) questerClass.getMethod("getPlayerName").invoke(quester);
+                        UUID playerUUID = (UUID) questerClass.getMethod("getUUID").invoke(quester);
+                        
+                        // 获取 Quest 对象
+                        Object quest = event.getClass().getMethod("getQuest").invoke(event);
+                        String questName = (String) questClass.getMethod("getName").invoke(quest);
+                        
+                        // 计算并发放积分
+                        int points = calculatePointsForQuest(questName);
+                        if (points > 0) {
+                            // 发放积分
+                            taskManager.addTaskPoints(playerUUID, points);
+                            
+                            // 如果玩家在线，发送消息
+                            Player player = Bukkit.getPlayer(playerUUID);
+                            if (player != null && player.isOnline()) {
+                                player.sendMessage("§a恭喜完成任务 §e" + questName + " §a获得 §b" + points + " §a任务积分！");
+                            }
+                            
+                            getLogger().info("玩家 " + playerName + " 完成任务 " + questName + "，获得 " + points + " 积分");
+                        }
+                    } catch (Exception e) {
+                        getLogger().warning("处理 Quests 任务完成事件时出错: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            };
             
-            getLogger().info("自动保存所有数据完成");
-        }, 6000L, 6000L); // 每5分钟保存一次 (6000 ticks = 5 minutes)
+            // 注册事件监听器
+            getServer().getPluginManager().registerEvent(
+                (Class<? extends org.bukkit.event.Event>) questCompleteEventClass, 
+                questsListener, 
+                EventPriority.NORMAL, 
+                eventExecutor, 
+                this,
+                false
+            );
+        } catch (Exception e) {
+            getLogger().warning("注册 Quests 事件监听器时出错: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 根据任务名称计算应发放的积分
+     * 可以根据任务名称、难度等来决定积分数量
+     */
+    private int calculatePointsForQuest(String questName) {
+        // 这里可以实现更复杂的积分计算逻辑
+        // 比如根据任务名称关键词判断任务类型和难度
+        
+        // 示例：根据任务名称包含的关键词判断积分
+        if (questName != null) {
+            String lowerQuestName = questName.toLowerCase();
+            
+            // 根据任务名称关键词判断
+            if (lowerQuestName.contains("easy") || lowerQuestName.contains("简单")) {
+                return 20;
+            } else if (lowerQuestName.contains("hard") || lowerQuestName.contains("困难")) {
+                return 100;
+            } else if (lowerQuestName.contains("medium") || lowerQuestName.contains("中等")) {
+                return 50;
+            }
+        }
+        
+        // 默认积分
+        return 30;
     }
 }

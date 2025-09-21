@@ -4,247 +4,335 @@ import cn.popcraft.villagepro.VillagePro;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-
 import java.lang.reflect.Method;
 import java.util.logging.Level;
 
 /**
- * Quests插件集成管理器
+ * Quests插件集成管理器 (适配 PikaMug/Quests)
  * 用于在检测到Quests插件时，使用Quests的任务系统替代内置任务系统
  */
 public class QuestsIntegrationManager {
     private final VillagePro plugin;
-    private Object questsApi;
+    private Plugin questsPlugin; // 直接保存 Plugin 实例
     private boolean questsAvailable = false;
-    
+
     public QuestsIntegrationManager(VillagePro plugin) {
         this.plugin = plugin;
         initializeQuestsIntegration();
     }
-    
+
     /**
      * 初始化Quests集成
      */
     private void initializeQuestsIntegration() {
+        this.questsPlugin = Bukkit.getPluginManager().getPlugin("Quests");
+        if (this.questsPlugin == null || !this.questsPlugin.isEnabled()) {
+            this.plugin.getLogger().info("未检测到Quests插件，将使用内置任务系统");
+            return;
+        }
+        this.questsAvailable = true;
+        this.plugin.getLogger().info("成功集成Quests插件，将使用Quests任务系统");
+    }
+
+    /**
+     * 检查Quests插件是否可用
+     */
+    public boolean isQuestsAvailable() {
+        return questsAvailable && questsPlugin != null && questsPlugin.isEnabled();
+    }
+
+    // ================== 核心：获取 QPlayer 实例 ==================
+
+    private Object getQPlayer(Player player) {
+        if (!isQuestsAvailable() || player == null) {
+            return null;
+        }
+
         try {
-            Plugin questsPlugin = Bukkit.getPluginManager().getPlugin("Quests");
-            if (questsPlugin != null && questsPlugin.isEnabled()) {
-                // 尝试获取Quests API
+            Class<?> questsClass = questsPlugin.getClass();
+            
+            // 尝试不同的方法名获取玩家实例
+            Method getPlayerMethod = null;
+            Exception lastException = null;
+            
+            // 尝试 getPlayer 方法
+            try {
+                getPlayerMethod = questsClass.getMethod("getPlayer", org.bukkit.entity.Player.class);
+            } catch (NoSuchMethodException e) {
+                lastException = e;
+                
+                // 尝试 getQuester 方法（旧版本）
                 try {
-                    Method getQuestsAPIMethod = questsPlugin.getClass().getMethod("getAPI");
-                    questsApi = getQuestsAPIMethod.invoke(questsPlugin);
-                } catch (NoSuchMethodException e) {
-                    // 尝试其他可能的API方法名
+                    getPlayerMethod = questsClass.getMethod("getQuester", org.bukkit.entity.Player.class);
+                } catch (NoSuchMethodException ex) {
+                    lastException = ex;
+                    
+                    // 尝试 get 方法（可能的新版本）
                     try {
-                        Method getQuestsAPIMethod = questsPlugin.getClass().getMethod("getApi");
-                        questsApi = getQuestsAPIMethod.invoke(questsPlugin);
-                    } catch (NoSuchMethodException ex) {
-                        // 尝试直接获取API字段
+                        getPlayerMethod = questsClass.getMethod("get", org.bukkit.entity.Player.class);
+                    } catch (NoSuchMethodException exc) {
+                        lastException = exc;
+                        
+                        // 尝试 getPlayerByUUID 方法
                         try {
-                            java.lang.reflect.Field apiField = questsPlugin.getClass().getDeclaredField("api");
-                            apiField.setAccessible(true);
-                            questsApi = apiField.get(questsPlugin);
-                        } catch (Exception exx) {
-                            plugin.getLogger().log(Level.WARNING, "无法获取Quests API: " + exx.getMessage());
+                            getPlayerMethod = questsClass.getMethod("getPlayerByUUID", java.util.UUID.class);
+                            // 如果找到这个方法，我们需要传递UUID而不是Player
+                            Object result = getPlayerMethod.invoke(questsPlugin, player.getUniqueId());
+                            return result;
+                        } catch (NoSuchMethodException exce) {
+                            lastException = exce;
                         }
                     }
                 }
-                
-                if (questsApi != null) {
-                    questsAvailable = true;
-                    plugin.getLogger().info("成功集成Quests插件，将使用Quests任务系统");
-                } else {
-                    plugin.getLogger().info("检测到Quests插件但无法获取API，将使用内置任务系统");
-                }
-            } else {
-                plugin.getLogger().info("未检测到Quests插件，将使用内置任务系统");
             }
+            
+            if (getPlayerMethod == null) {
+                plugin.getLogger().log(Level.WARNING, "无法找到获取Quests玩家实例的方法", lastException);
+                return null;
+            }
+            
+            // 如果我们没有提前返回（getPlayerByUUID情况），则正常调用
+            if (!getPlayerMethod.getName().equals("getPlayerByUUID")) {
+                return getPlayerMethod.invoke(questsPlugin, player);
+            }
+            // getPlayerByUUID的情况已经在上面处理了
+            return null;
         } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "初始化Quests集成时出错: " + e.getMessage() + "，将使用内置任务系统");
-            questsAvailable = false;
+            plugin.getLogger().log(Level.WARNING, "无法获取玩家的QPlayer实例: " + e.getMessage(), e);
+            return null;
         }
     }
-    
+
+    // ================== 功能：触发自定义目标完成 ==================
+
     /**
-     * 检查Quests插件是否可用
-     * @return 如果Quests插件可用则返回true，否则返回false
-     */
-    public boolean isQuestsAvailable() {
-        return questsAvailable;
-    }
-    
-    /**
-     * 创建一个Quests任务
+     * 触发玩家完成一个自定义任务目标
      * @param player 玩家
-     * @param taskType 任务类型
+     * @param questId 任务ID (在 quests.yml 中定义的 key)
+     * @param objectiveName 自定义目标名称 (在 quests.yml 中 custom_objective 下的 key)
+     * @param amount 完成数量
+     * @return 是否成功触发
+     */
+    public boolean completeCustomObjective(Player player, String questId, String objectiveName, int amount) {
+        if (!isQuestsAvailable()) return false;
+
+        Object qPlayer = getQPlayer(player);
+        if (qPlayer == null) return false;
+
+        try {
+            // 1. 通过 QPlayer 获取 QuestProgress 对象
+            Class<?> qPlayerClass = qPlayer.getClass();
+            
+            // 尝试不同的方法名获取任务进度
+            Method getQuestProgressMethod = null;
+            Exception lastException = null;
+            
+            try {
+                // 首先尝试 getQuestProgress 方法
+                getQuestProgressMethod = qPlayerClass.getMethod("getQuestProgress", String.class);
+            } catch (NoSuchMethodException e) {
+                lastException = e;
+                try {
+                    // 尝试 getQuestData 方法（旧版本）
+                    getQuestProgressMethod = qPlayerClass.getMethod("getQuestData", String.class);
+                } catch (NoSuchMethodException ex) {
+                    lastException = ex;
+                }
+            }
+            
+            if (getQuestProgressMethod == null) {
+                plugin.getLogger().log(Level.WARNING, "无法找到获取任务进度的方法", lastException);
+                return false;
+            }
+            
+            Object questProgress = getQuestProgressMethod.invoke(qPlayer, questId);
+
+            if (questProgress == null) {
+                plugin.getLogger().log(Level.WARNING, "玩家 " + player.getName() + " 未领取任务: " + questId);
+                return false;
+            }
+
+            // 2. 调用 progressObjective 方法
+            Class<?> questProgressClass = questProgress.getClass();
+            
+            // 尝试不同的方法名更新进度
+            Method progressObjectiveMethod = null;
+            lastException = null;
+            
+            try {
+                // 首先尝试 progressObjective 方法
+                progressObjectiveMethod = questProgressClass.getMethod("progressObjective", String.class, int.class);
+            } catch (NoSuchMethodException e) {
+                lastException = e;
+                try {
+                    // 尝试 addObjective 方法（旧版本）
+                    progressObjectiveMethod = questProgressClass.getMethod("addObjective", String.class, int.class);
+                } catch (NoSuchMethodException ex) {
+                    lastException = ex;
+                }
+            }
+            
+            if (progressObjectiveMethod == null) {
+                plugin.getLogger().log(Level.WARNING, "无法找到更新任务进度的方法", lastException);
+                return false;
+            }
+            
+            progressObjectiveMethod.invoke(questProgress, objectiveName, amount);
+
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "无法完成自定义目标 (" + questId + ":" + objectiveName + "): " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 简化版：完成一次自定义目标 (amount = 1)
+     */
+    public boolean completeCustomObjective(Player player, String questId, String objectiveName) {
+        return completeCustomObjective(player, questId, objectiveName, 1);
+    }
+
+    // ================== 让玩家领取一个随机任务 ==================
+
+    /**
+     * 让玩家领取一个随机任务
+     * @param player 玩家
+     * @return 是否成功
+     */
+    public boolean assignRandomQuest(Player player) {
+        if (!isQuestsAvailable()) return false;
+
+        Object qPlayer = getQPlayer(player);
+        if (qPlayer == null) return false;
+
+        try {
+            Class<?> qPlayerClass = qPlayer.getClass();
+            
+            // 尝试不同的方法名分配随机任务
+            Method assignRandomQuestMethod = null;
+            Exception lastException = null;
+            
+            try {
+                // 首先尝试 assignRandomQuest 方法
+                assignRandomQuestMethod = qPlayerClass.getMethod("assignRandomQuest");
+            } catch (NoSuchMethodException e) {
+                lastException = e;
+                try {
+                    // 尝试 giveRandomQuest 方法（旧版本）
+                    assignRandomQuestMethod = qPlayerClass.getMethod("giveRandomQuest");
+                } catch (NoSuchMethodException ex) {
+                    lastException = ex;
+                }
+            }
+            
+            if (assignRandomQuestMethod == null) {
+                plugin.getLogger().log(Level.WARNING, "无法找到分配随机任务的方法", lastException);
+                return false;
+            }
+            
+            assignRandomQuestMethod.invoke(qPlayer);
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "无法分配随机任务: " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    // ================== 适配你原有接口的方法 ==================
+
+    /**
+     * 创建一个Quests任务（实际是触发预定义任务的进度）
+     * 注意：你需要在 quests.yml 中预先配置好任务
+     * @param player 玩家
+     * @param taskType 任务类型（如 MINE_STONE）
      * @param targetAmount 目标数量
-     * @param rewardExp 奖励经验
-     * @param rewardMoney 奖励金钱
-     * @return 是否成功创建任务
+     * @param rewardExp 奖励经验（由Quests配置决定）
+     * @param rewardMoney 奖励金钱（由Quests配置决定）
+     * @return 是否成功
      */
     public boolean createQuest(Player player, String taskType, int targetAmount, int rewardExp, double rewardMoney) {
-        if (!questsAvailable || questsApi == null) {
+        if (!isQuestsAvailable()) return false;
+
+        // 这里你需要定义一个映射，将 taskType 映射到 quests.yml 中的任务ID
+        String questId = mapTaskTypeToQuestId(taskType);
+        if (questId == null) {
             return false;
         }
-        
-        try {
-            // 根据任务类型创建相应的Quests任务
-            switch (taskType) {
-                case "MINE_STONE":
-                    return createMiningQuest(player, "STONE", targetAmount, rewardExp, rewardMoney);
-                case "MINE_IRON":
-                    return createMiningQuest(player, "IRON_ORE", targetAmount, rewardExp, rewardMoney);
-                case "MINE_DIAMOND":
-                    return createMiningQuest(player, "DIAMOND_ORE", targetAmount, rewardExp, rewardMoney);
-                case "KILL_ZOMBIE":
-                    return createKillingQuest(player, "ZOMBIE", targetAmount, rewardExp, rewardMoney);
-                case "KILL_SKELETON":
-                    return createKillingQuest(player, "SKELETON", targetAmount, rewardExp, rewardMoney);
-                case "KILL_CREEPER":
-                    return createKillingQuest(player, "CREEPER", targetAmount, rewardExp, rewardMoney);
-                case "COLLECT_WHEAT":
-                    return createCollectingQuest(player, "WHEAT", targetAmount, rewardExp, rewardMoney);
-                case "HARVEST_CROP":
-                    return createHarvestingQuest(player, targetAmount, rewardExp, rewardMoney);
-                case "FISH_ITEM":
-                    return createFishingQuest(player, targetAmount, rewardExp, rewardMoney);
-                case "ENCHANT_ITEM":
-                    return createEnchantingQuest(player, targetAmount, rewardExp, rewardMoney);
-                default:
-                    // 对于不支持的任务类型，回退到内置系统
-                    return false;
-            }
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "创建Quests任务时出错: " + e.getMessage());
-            return false;
-        }
+
+        // 直接推进进度
+        String objectiveName = mapTaskTypeToObjective(taskType);
+        return completeCustomObjective(player, questId, objectiveName, targetAmount);
     }
-    
-    /**
-     * 创建挖掘任务
-     */
-    private boolean createMiningQuest(Player player, String blockType, int targetAmount, int rewardExp, double rewardMoney) {
-        try {
-            // 这里应该调用Quests API创建挖掘任务
-            // 由于没有实际的Quests API文档，我们只是模拟实现
-            plugin.getLogger().info("为玩家 " + player.getName() + " 创建挖掘任务: 挖掘 " + targetAmount + " 个 " + blockType);
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "创建挖掘任务时出错: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * 创建击杀任务
-     */
-    private boolean createKillingQuest(Player player, String mobType, int targetAmount, int rewardExp, double rewardMoney) {
-        try {
-            // 这里应该调用Quests API创建击杀任务
-            plugin.getLogger().info("为玩家 " + player.getName() + " 创建击杀任务: 击杀 " + targetAmount + " 个 " + mobType);
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "创建击杀任务时出错: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * 创建收集任务
-     */
-    private boolean createCollectingQuest(Player player, String itemType, int targetAmount, int rewardExp, double rewardMoney) {
-        try {
-            // 这里应该调用Quests API创建收集任务
-            plugin.getLogger().info("为玩家 " + player.getName() + " 创建收集任务: 收集 " + targetAmount + " 个 " + itemType);
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "创建收集任务时出错: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * 创建收获任务
-     */
-    private boolean createHarvestingQuest(Player player, int targetAmount, int rewardExp, double rewardMoney) {
-        try {
-            // 这里应该调用Quests API创建收获任务
-            plugin.getLogger().info("为玩家 " + player.getName() + " 创建收获任务: 收获 " + targetAmount + " 次作物");
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "创建收获任务时出错: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * 创建钓鱼任务
-     */
-    private boolean createFishingQuest(Player player, int targetAmount, int rewardExp, double rewardMoney) {
-        try {
-            // 这里应该调用Quests API创建钓鱼任务
-            plugin.getLogger().info("为玩家 " + player.getName() + " 创建钓鱼任务: 钓鱼 " + targetAmount + " 次");
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "创建钓鱼任务时出错: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * 创建附魔任务
-     */
-    private boolean createEnchantingQuest(Player player, int targetAmount, int rewardExp, double rewardMoney) {
-        try {
-            // 这里应该调用Quests API创建附魔任务
-            plugin.getLogger().info("为玩家 " + player.getName() + " 创建附魔任务: 附魔 " + targetAmount + " 个物品");
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "创建附魔任务时出错: " + e.getMessage());
-            return false;
-        }
-    }
-    
+
     /**
      * 更新任务进度
-     * @param player 玩家
-     * @param taskType 任务类型
-     * @param progress 进度增量
-     * @return 是否成功更新进度
      */
     public boolean updateQuestProgress(Player player, String taskType, int progress) {
-        if (!questsAvailable || questsApi == null) {
+        if (!isQuestsAvailable()) return false;
+
+        String questId = mapTaskTypeToQuestId(taskType);
+        String objectiveName = mapTaskTypeToObjective(taskType);
+        if (questId == null || objectiveName == null) {
             return false;
         }
-        
-        try {
-            // 这里应该调用Quests API更新任务进度
-            plugin.getLogger().info("更新玩家 " + player.getName() + " 的任务进度: " + taskType + " +" + progress);
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "更新任务进度时出错: " + e.getMessage());
-            return false;
-        }
+
+        return completeCustomObjective(player, questId, objectiveName, progress);
     }
-    
+
     /**
-     * 完成任务
-     * @param player 玩家
-     * @param taskType 任务类型
-     * @return 是否成功完成任务
+     * 完成任务（由Quests自动判断）
      */
     public boolean completeQuest(Player player, String taskType) {
-        if (!questsAvailable || questsApi == null) {
-            return false;
+        // 无需主动调用，Quests 会在目标达成时自动完成
+        plugin.getLogger().info("玩家 " + player.getName() + " 的任务 '" + taskType + "' 可能已完成");
+        return true;
+    }
+
+    // ================== 工具方法：映射 ==================
+
+    /**
+     * 将任务类型映射到 quests.yml 中的任务ID
+     * 你需要根据你的 quests.yml 配置来修改这个方法
+     */
+    private String mapTaskTypeToQuestId(String taskType) {
+        switch (taskType) {
+            case "MINE_STONE":
+            case "MINE_IRON":
+            case "MINE_DIAMOND":
+                return "mining_quest"; // 假设你在 quests.yml 中定义了一个 mining_quest
+            case "KILL_ZOMBIE":
+            case "KILL_SKELETON":
+            case "KILL_CREEPER":
+                return "killing_quest";
+            case "COLLECT_WHEAT":
+            case "HARVEST_CROP":
+                return "farming_quest";
+            case "FISH_ITEM":
+                return "fishing_quest";
+            case "ENCHANT_ITEM":
+                return "enchanting_quest";
+            default:
+                return null;
         }
-        
-        try {
-            // 这里应该调用Quests API完成任务并发放奖励
-            plugin.getLogger().info("玩家 " + player.getName() + " 完成了任务: " + taskType);
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "完成任务时出错: " + e.getMessage());
-            return false;
+    }
+
+    /**
+     * 将任务类型映射到 quests.yml 中的 custom_objective 名称
+     */
+    private String mapTaskTypeToObjective(String taskType) {
+        switch (taskType) {
+            case "MINE_STONE": return "mine_stone";
+            case "MINE_IRON": return "mine_iron";
+            case "MINE_DIAMOND": return "mine_diamond";
+            case "KILL_ZOMBIE": return "kill_zombie";
+            case "KILL_SKELETON": return "kill_skeleton";
+            case "KILL_CREEPER": return "kill_creeper";
+            case "COLLECT_WHEAT": return "collect_wheat";
+            case "HARVEST_CROP": return "harvest_crop";
+            case "FISH_ITEM": return "fish_item";
+            case "ENCHANT_ITEM": return "enchant_item";
+            default: return null;
         }
     }
 }

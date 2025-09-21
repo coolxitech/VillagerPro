@@ -16,6 +16,7 @@ commands:
   villager:
     description: Villager management commands
     usage: /<command> [subcommand]
+    aliases: [v]
   village:
     description: Village management commands
     usage: /<command> [subcommand]

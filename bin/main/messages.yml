@@ -6,6 +6,12 @@ prefix: "&a[VillagePro] &r"
 # 权限消息
 no-permission: "&c你没有权限执行此命令!"
 
+# 自动保存消息
+auto-save:
+  enabled: "&a自动保存已启用，间隔 {minutes} 分钟"
+  disabled: "&c自动保存已禁用"
+  interval-changed: "&a自动保存间隔已更改为 {minutes} 分钟"
+
 # 帮助消息
 help:
   title: "&6=== VillagePro 命令帮助 ==="
@@ -24,6 +30,22 @@ villager:
   already-recruited: "&c该村民已被招募!"
   max-villagers-reached: "&c你已达到最大村民数量限制!"
   max-reached: "&c你已达到最大村民数量限制!"
+  no-villagers: "&c你还没有招募任何村民!"
+  removed: "&a村民已成功移除!"
+  
+# 招募相关消息
+recruit:
+  success: "&a成功招募了村民!"
+  failed: "&c招募失败，请确保你有足够的资源!"
+  not-enough-money: "&c招募失败，金币不足! 你有 {current} 金币，需要: &e{amount} 金币"
+  not-enough-items: "&c招募失败，缺少物品! 你有 {current} 个 {item}，需要: &e{amount} 个 {item}"
+  not-enough-diamonds: "&c招募失败，钻石不足! 你有 {current} 钻石，需要: &e{amount} 钻石"
+  not-enough-points: "&c招募失败，点券不足! 你有 {current} 点券，需要: &e{amount} 点券"
+  
+# 跟随相关消息
+follow:
+  no-villager: "&c附近没有属于你的村民!"
+  mode-changed: "&a村民跟随模式已切换为: &e{mode}"
   
 # 村庄相关消息
 village:
@@ -31,6 +53,9 @@ village:
   upgraded: "&a村庄升级成功! 当前等级: &e{level}"
   max-level: "&c村庄已达到最高等级!"
   not-found: "&c你还没有村庄，请先创建一个!"
+  info:
+    header: "&6===== 村庄信息 ====="
+    upgrade: "&e{type}: &f等级 {level}"
   
 # 升级相关消息
 upgrade:
@@ -54,6 +79,10 @@ upgrade:
     description: "提高村民交易价格"
   success: "&a成功升级了村民的 {type} 能力到 {level} 级!"
   failed: "&c升级失败，请确保你有足够的资源!"
+  not-enough-money: "&c升级失败，金币不足! 需要: &e{amount}"
+  not-enough-items: "&c升级失败，缺少物品! 需要: &e{amount}个 {item}"
+  not-enough-diamonds: "&c升级失败，钻石不足! 需要: &e{amount}个钻石"
+  not-enough-points: "&c升级失败，点券不足! 需要: &e{amount}点券"
   max-level-reached: "&c该能力已达到最高等级!"
 
 # 指令相关消息
@@ -97,7 +126,12 @@ commands:
       - "&a/villager info &7- &f显示村民详细信息"
       - "&a/villager list &7- &f列出所有村民"
       - "&a/villager remove <id> &7- &f移除村民"
+      - "&a/villager help &7- &f显示此帮助信息"
       
+    remove:
+      usage: "&c用法: /villager remove <村民ID>"
+      invalid-id: "&c无效的村民ID格式!"
+        
   village:
     description: "管理村庄的主命令"
     usage: "&e使用: &a/village [subcommand] [args]"
@@ -110,6 +144,7 @@ commands:
       - "&a/village create &7- &f创建新村庄"
       - "&a/village upgrade &7- &f升级村庄"
       - "&a/village info &7- &f显示村庄信息"
+      - "&a/village help &7- &f显示此帮助信息"
       
   recruit:
     description: "招募新村民"
@@ -149,7 +184,7 @@ commands:
       - "&7可选类型: &fTRADE, HEALTH, SPEED, PROTECTION, RESTOCK_SPEED, CROP_GROWTH, CROP_YIELD, TRADE_AMOUNT, TRADE_QUALITY, TRADE_PRICE"
   
 # 村民相关消息
-follow:
+follow-mode:
   start: "&a村民开始跟随你"
   stop: "&a村民停止跟随"
   stay: "&a村民将停留在此处"
@@ -189,38 +224,17 @@ crop:
   
 # 任务相关消息
 task:
-  generated: "&a已生成新的任务: &e{description}"
-  progress: "&a任务进度: &e{progress}/{target} {task}"
-  completed: "&a任务完成! 获得奖励: &e{reward}"
-  reward: "&a任务奖励: &e{exp} 经验 &7| &e{money} 金币"
-  pending: "&e任务系统正在开发中..."
-  
-# 招募相关消息
-recruit:
-  success: "&a成功招募了一名村民!"
-  failed: "&c招募失败，请确保你有足够的资源!"
-  not-enough-money: "&c招募失败，你的金币不足!"
-  not-enough-items: "&c招募失败，你需要至少 {amount} 个 {item}!"
-  max-villagers-reached: "&c你已达到最大村民数量限制!"
-  
-# 配置相关消息
-config:
-  invalid-upgrade-type: "未知的升级类型: {type}"
-  invalid-upgrade-level: "无效的升级等级: {level}"
-  
-# 升级类型名称
-upgrade-types:
-  TRADE: "交易能力"
-  HEALTH: "健康能力"
-  SPEED: "速度能力"
-  PROTECTION: "防护能力"
-  RESTOCK_SPEED: "补货速度"
-  CROP_GROWTH: "作物产量"
-  CROP_YIELD: "作物产量"
-  TRADE_AMOUNT: "交易数量"
-  TRADE_QUALITY: "交易质量"
-  TRADE_PRICE: "交易价格"
-
+  generated: "&a新任务已生成: &e{description}"
+  completed: "&a任务已完成! 获得奖励: &e{exp}经验 &f和 &6{money}金币"
+  no-active: "&c你当前没有进行中的任务"
+  info:
+    header: "&6===== 任务信息 ====="
+    type: "&e任务类型: &f{type}"
+    target: "&e目标: &f{target}"
+    progress: "&e进度: &f{progress}/{target}"
+    reward: "&e奖励: &f{exp}经验, {money}金币"
+  cost: "&c生成任务需要 &e{cost} &c金币"
+    
 # 权限
 permissions:
   villagepro.*:

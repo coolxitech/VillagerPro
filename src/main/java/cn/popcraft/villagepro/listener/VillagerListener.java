@@ -21,7 +21,7 @@ import org.bukkit.event.entity.VillagerReplenishTradeEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.MerchantRecipe;
+
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.scheduler.BukkitRunnable;

@@ -11,6 +11,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 
@@ -20,7 +21,7 @@ import java.util.UUID;
 import java.util.Map;
 
 
-public class VillagerCommand implements CommandExecutor {
+public class VillagerCommand implements CommandExecutor, TabExecutor {
     private final VillagePro plugin;
     private final MessageManager messageManager;
     private final List<SubCommand> subCommands = new ArrayList<>();
@@ -45,17 +46,13 @@ public class VillagerCommand implements CommandExecutor {
             return true;
         }
 
-        if (args.length == 0) {
-            // 显示帮助信息
-            sendHelpMessage(player);
-            return true;
-        }
-        
-        if (args[0].equalsIgnoreCase("help")) {
+        // 如果没有参数或参数是help，则显示帮助信息
+        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
             sendHelpMessage(player);
             return true;
         }
 
+        // 处理子命令
         switch (args[0].toLowerCase()) {
             case "production":
                 plugin.getProductionGUI().openMainMenu(player);
@@ -88,11 +85,36 @@ public class VillagerCommand implements CommandExecutor {
                 handleVillagerRemove(player, args);
                 break;
             default:
-                player.sendMessage(messageManager.getMessage("commands.villager.usage"));
+                player.sendMessage(messageManager.getMessage("help.invalid-usage"));
+                sendHelpMessage(player);
                 break;
         }
 
         return true;
+    }
+    
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        List<String> completions = new ArrayList<>();
+        
+        if (args.length == 1) {
+            // 补全子命令
+            String[] subCommands = {"production", "upgrade", "follow", "info", "list", "remove", "help"};
+            for (String subCommand : subCommands) {
+                if (subCommand.startsWith(args[0].toLowerCase())) {
+                    completions.add(subCommand);
+                }
+            }
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("upgrade")) {
+            // 补全升级类型
+            for (UpgradeType type : UpgradeType.values()) {
+                if (type.name().toLowerCase().startsWith(args[1].toLowerCase())) {
+                    completions.add(type.name().toLowerCase());
+                }
+            }
+        }
+        
+        return completions;
     }
     
     /**
