@@ -2,8 +2,8 @@ name: VillagePro
 version: ${version}
 main: cn.popcraft.villagepro.VillagePro
 api-version: 1.19
-depend: [Vault, Quests]
-softdepend: [PlayerPoints, CMI, Essentials]
+depend: [Vault]
+softdepend: [PlayerPoints, CMI, Essentials, Quests]
 authors: [PopCraft]
 description: Advanced village and villager management plugin
 website: https://github.com/sweepikun/VillagerPro

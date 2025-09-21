@@ -125,7 +125,7 @@ public final class VillagePro extends JavaPlugin {
         // 注册 Quests 事件监听器（如果 Quests 插件已加载）
         if (getServer().getPluginManager().isPluginEnabled("Quests")) {
             try {
-                registerQuestsEventListener();
+                Bukkit.getPluginManager().registerEvents(new QuestsEventListener(this), this);
                 getLogger().info("已注册 Quests 任务完成监听器");
             } catch (Exception e) {
                 getLogger().warning("注册 Quests 事件监听器时出错: " + e.getMessage());
@@ -271,91 +271,33 @@ public final class VillagePro extends JavaPlugin {
     }
     
     /**
-     * 注册 Quests 事件监听器
-     */
-    private void registerQuestsEventListener() {
-        try {
-            // 动态注册 Quests 事件监听器
-            Class<?> questCompleteEventClass = Class.forName("me.pikamug.quests.events.QuestCompleteEvent");
-            Class<?> questerClass = Class.forName("me.pikamug.quests.player.Quester");
-            Class<?> questClass = Class.forName("me.pikamug.quests.quests.Quest");
-            
-            // 创建监听器实例
-            Listener questsListener = new Listener() {};
-            
-            // 创建事件执行器
-            EventExecutor eventExecutor = new EventExecutor() {
-                @Override
-                public void execute(Listener listener, org.bukkit.event.Event event) throws org.bukkit.event.EventException {
-                    try {
-                        // 获取 Quester (玩家) 对象
-                        Object quester = event.getClass().getMethod("getQuester").invoke(event);
-                        String playerName = (String) questerClass.getMethod("getPlayerName").invoke(quester);
-                        UUID playerUUID = (UUID) questerClass.getMethod("getUUID").invoke(quester);
-                        
-                        // 获取 Quest 对象
-                        Object quest = event.getClass().getMethod("getQuest").invoke(event);
-                        String questName = (String) questClass.getMethod("getName").invoke(quest);
-                        
-                        // 计算并发放积分
-                        int points = calculatePointsForQuest(questName);
-                        if (points > 0) {
-                            // 发放积分
-                            taskManager.addTaskPoints(playerUUID, points);
-                            
-                            // 如果玩家在线，发送消息
-                            Player player = Bukkit.getPlayer(playerUUID);
-                            if (player != null && player.isOnline()) {
-                                player.sendMessage("§a恭喜完成任务 §e" + questName + " §a获得 §b" + points + " §a任务积分！");
-                            }
-                            
-                            getLogger().info("玩家 " + playerName + " 完成任务 " + questName + "，获得 " + points + " 积分");
-                        }
-                    } catch (Exception e) {
-                        getLogger().warning("处理 Quests 任务完成事件时出错: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                }
-            };
-            
-            // 注册事件监听器
-            getServer().getPluginManager().registerEvent(
-                (Class<? extends org.bukkit.event.Event>) questCompleteEventClass, 
-                questsListener, 
-                EventPriority.NORMAL, 
-                eventExecutor, 
-                this,
-                false
-            );
-        } catch (Exception e) {
-            getLogger().warning("注册 Quests 事件监听器时出错: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    /**
      * 根据任务名称计算应发放的积分
      * 可以根据任务名称、难度等来决定积分数量
      */
-    private int calculatePointsForQuest(String questName) {
-        // 这里可以实现更复杂的积分计算逻辑
-        // 比如根据任务名称关键词判断任务类型和难度
-        
-        // 示例：根据任务名称包含的关键词判断积分
-        if (questName != null) {
-            String lowerQuestName = questName.toLowerCase();
-            
-            // 根据任务名称关键词判断
-            if (lowerQuestName.contains("easy") || lowerQuestName.contains("简单")) {
-                return 20;
-            } else if (lowerQuestName.contains("hard") || lowerQuestName.contains("困难")) {
-                return 100;
-            } else if (lowerQuestName.contains("medium") || lowerQuestName.contains("中等")) {
+    public int calculatePointsForQuest(String questName) {
+        // 这里可以根据任务名称来决定奖励的积分数量
+        // 你可以根据需要修改这个逻辑
+        switch (questName.toLowerCase()) {
+            case "daily_mining":
                 return 50;
-            }
+            case "epic_boss_kill":
+                return 200;
+            case "收集木材":
+                return 30;
+            case "挖矿任务":
+                return 80;
+            case "击败僵尸":
+                return 40;
+            case "建造房屋":
+                return 100;
+            case "钓鱼任务":
+                return 60;
+            case "农业任务":
+                return 50;
+            case "探险任务":
+                return 120;
+            default:
+                return 30; // 默认奖励积分
         }
-        
-        // 默认积分
-        return 30;
     }
 }
