@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'cn.popcraft'
-version = '1.1.23-SNAPSHOT'
+version = '1.1.37-SNAPSHOT'
 description = 'Spigot Plugin'
 
 repositories {
@@ -23,6 +23,7 @@ dependencies {
     compileOnly 'org.jetbrains:annotations:24.0.0'
     compileOnly group: 'net.milkbowl.vault', name: 'VaultAPI', version: '1.7'
     annotationProcessor group: 'net.milkbowl.vault', name: 'VaultAPI', version: '1.7'
+    compileOnly 'com.github.PikaMug:Quests:5.2.5'
 }
 
 java {

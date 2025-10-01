@@ -29,22 +29,45 @@ public class PlayerPointsCompat {
             playerPointsPlugin = Bukkit.getPluginManager().getPlugin("PlayerPoints");
             if (playerPointsPlugin != null && playerPointsPlugin.isEnabled()) {
                 // 尝试验证API是否可访问
+                boolean apiAvailable = false;
+                
+                // 尝试多种方式获取API
                 try {
                     Object api = playerPointsPlugin.getClass().getMethod("getAPI").invoke(playerPointsPlugin);
                     if (api != null) {
-                        available = true;
-                        plugin.getLogger().log(Level.INFO, "成功连接到PlayerPoints插件");
-                    } else {
-                        plugin.getLogger().log(Level.WARNING, "PlayerPoints插件已找到但API不可用，点券系统功能将不可用");
+                        apiAvailable = true;
                     }
-                } catch (Exception e) {
-                    plugin.getLogger().log(Level.WARNING, "PlayerPoints插件API访问失败: " + e.getMessage() + "，点券系统功能将不可用");
+                } catch (Exception e1) {
+                    try {
+                        Object api = playerPointsPlugin.getClass().getMethod("getApi").invoke(playerPointsPlugin);
+                        if (api != null) {
+                            apiAvailable = true;
+                        }
+                    } catch (Exception e2) {
+                        try {
+                            java.lang.reflect.Field apiField = playerPointsPlugin.getClass().getDeclaredField("api");
+                            apiField.setAccessible(true);
+                            Object api = apiField.get(playerPointsPlugin);
+                            if (api != null) {
+                                apiAvailable = true;
+                            }
+                        } catch (Exception e3) {
+                            plugin.getLogger().log(Level.WARNING, "PlayerPoints插件API访问失败: 无法通过反射获取API", e3);
+                        }
+                    }
+                }
+                
+                if (apiAvailable) {
+                    available = true;
+                    plugin.getLogger().log(Level.INFO, "成功连接到PlayerPoints插件");
+                } else {
+                    plugin.getLogger().log(Level.WARNING, "PlayerPoints插件已找到但API不可用，点券系统功能将不可用");
                 }
             } else {
                 plugin.getLogger().log(Level.WARNING, "未找到PlayerPoints插件，点券系统功能将不可用");
             }
         } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "检查PlayerPoints插件时发生错误: " + e.getMessage() + "，点券系统功能将不可用");
+            plugin.getLogger().log(Level.WARNING, "检查PlayerPoints插件时发生错误: " + e.getMessage() + "，点券系统功能将不可用", e);
             available = false;
         }
     }

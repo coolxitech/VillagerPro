@@ -31,7 +31,7 @@ public class UpgradeCommand implements CommandExecutor {
         }
 
         // 打开升级GUI
-        UpgradeGUI gui = new UpgradeGUI(plugin, player, plugin.getVillageManager().getOrCreateVillage(player));
+        UpgradeGUI gui = new UpgradeGUI(plugin);
         gui.openMainMenu(player);
         return true;
     }

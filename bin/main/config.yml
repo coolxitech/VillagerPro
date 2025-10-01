@@ -1,5 +1,10 @@
 # VillagePro 配置文件
 
+# 自动保存配置
+auto-save:
+  enabled: true
+  interval: 36000  # 以ticks为单位（36000 ticks = 30分钟）
+
 # 村民升级配置
 upgrades:
   TRADE:
@@ -326,6 +331,8 @@ upgrades:
 # 村民招募配置
 recruit:
   cost-money: 5000
+  cost-diamonds: 0
+  cost-points: 0
   max-villagers: 5
   cost-items:
     EMERALD: 10
@@ -360,6 +367,7 @@ tasks:
     - MILK_COW
     - TAME_ANIMAL
     - BREW_POTION
+  generation-cost: 100.0  # 生成任务所需的金币数量
 
 # 消息配置
 messages:

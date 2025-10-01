@@ -1,11 +1,11 @@
 package cn.popcraft.villagepro.storage;
 
-import cn.popcraft.villagepro.VillagePro;
+
 import cn.popcraft.villagepro.model.Village;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.configuration.Configuration;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.logging.Logger;
+
 
 public abstract class SQLiteStorage {
     private final Plugin plugin;
@@ -79,15 +79,40 @@ public abstract class SQLiteStorage {
     }
 
     private void initializeTables() {
-        String sql = "CREATE TABLE IF NOT EXISTS villages ("
+        // 初始化村庄表
+        String villagesSql = "CREATE TABLE IF NOT EXISTS villages ("
                 + "id TEXT PRIMARY KEY, "
                 + "ownerUuid TEXT, "
                 + "data TEXT)";
         
         try {
-            executeUpdate(sql);
+            executeUpdate(villagesSql);
         } catch (SQLException e) {
-            plugin.getLogger().severe("创建数据库表失败: " + e.getMessage());
+            plugin.getLogger().severe("创建村庄数据库表失败: " + e.getMessage());
+        }
+        
+        // 初始化任务表
+        String tasksSql = "CREATE TABLE IF NOT EXISTS player_tasks ("
+                + "id TEXT PRIMARY KEY, "
+                + "data TEXT)";
+        
+        try {
+            executeUpdate(tasksSql);
+            plugin.getLogger().info("任务数据表初始化完成");
+        } catch (SQLException e) {
+            plugin.getLogger().severe("创建任务数据库表失败: " + e.getMessage());
+        }
+        
+        // 初始化作物存储表
+        String cropsSql = "CREATE TABLE IF NOT EXISTS crop_storages ("
+                + "id TEXT PRIMARY KEY, "
+                + "data TEXT)";
+        
+        try {
+            executeUpdate(cropsSql);
+            plugin.getLogger().info("作物存储表初始化完成");
+        } catch (SQLException e) {
+            plugin.getLogger().severe("创建作物存储数据库表失败: " + e.getMessage());
         }
     }
 

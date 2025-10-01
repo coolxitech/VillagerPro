@@ -12,6 +12,13 @@ public class PlayerTaskData {
     private Map<UUID, Task> activeTasks = new HashMap<>();
     private int taskPoints = 0; // 添加任务积分字段
 
+    public PlayerTaskData() {
+    }
+
+    public PlayerTaskData(UUID playerUuid) {
+        this.playerUuid = playerUuid;
+    }
+
     public UUID getPlayerUuid() {
         return playerUuid;
     }

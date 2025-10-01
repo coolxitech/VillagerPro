@@ -440,6 +440,9 @@ public class TaskGUI implements Listener {
             case "任务商店":
                 openTaskShopGUI(player);
                 break;
+            case "返回":
+                player.closeInventory();
+                break;
             default:
                 break;
         }
@@ -506,7 +509,6 @@ public class TaskGUI implements Listener {
                     player.sendMessage(ChatColor.GREEN + "获得奖励: " + task.getRewardMoney() + "金币, " + 
                                      task.getRewardExp() + "经验, " + taskPoints + "任务积分");
                     player.closeInventory();
-                    openTaskGUI(player);
                 } else {
                     player.sendMessage(ChatColor.RED + "任务尚未完成!");
                 }
@@ -521,7 +523,6 @@ public class TaskGUI implements Listener {
                 
                 player.sendMessage(ChatColor.YELLOW + "你放弃了任务: " + task.getType().toString());
                 player.closeInventory();
-                openTaskGUI(player);
                 break;
                 
             case "返回":
@@ -614,33 +615,53 @@ public class TaskGUI implements Listener {
             return;
         }
 
-        double cost = 100.0;
+        // 从配置文件读取任务生成费用
+        double cost = plugin.getConfig().getDouble("tasks.generation-cost", 100.0);
         
         // 检查玩家余额
         if (!plugin.getEconomyManager().has(player, cost)) {
-            player.sendMessage(ChatColor.RED + "余额不足！需要: " + plugin.getEconomyManager().format(cost));
+            Map<String, String> replacements = new HashMap<>();
+            replacements.put("cost", plugin.getEconomyManager().format(cost));
+            player.sendMessage(plugin.getMessageManager().getMessage("task.cost", replacements));
             return;
         }
 
+        // 检查Quests插件是否可用
+        if (plugin.getQuestsIntegrationManager().isQuestsAvailable()) {
+            // 扣除费用
+            if (plugin.getEconomyManager().withdraw(player, cost)) {
+                // 使用Quests的随机任务功能
+                if (plugin.getQuestsIntegrationManager().assignRandomQuest(player)) {
+                    player.sendMessage(ChatColor.GREEN + "成功生成随机任务!");
+                    player.sendMessage(ChatColor.GRAY + "花费: " + plugin.getEconomyManager().format(cost));
+                    openTaskGUI(player); // 刷新任务界面
+                } else {
+                    // 如果任务生成失败，退还费用
+                    plugin.getEconomyManager().deposit(player, cost);
+                    player.sendMessage(ChatColor.RED + "任务生成失败！");
+                }
+            } else {
+                player.sendMessage(ChatColor.RED + "扣费失败！");
+            }
+            return;
+        }
+
+        // 如果Quests不可用，使用内置任务系统
         // 扣除费用
         if (plugin.getEconomyManager().withdraw(player, cost)) {
             // 生成随机任务
-            taskManager.assignNewTask(player);
-            player.sendMessage(ChatColor.GREEN + "成功生成新任务");
-            player.sendMessage(ChatColor.GRAY + "花费: " + plugin.getEconomyManager().format(cost));
-            player.closeInventory();
-            
-            /*
+            Task newTask = taskManager.assignNewTask(player);
             if (newTask != null) {
-                player.sendMessage(ChatColor.GREEN + "成功生成新任务: " + newTask.getType().toString());
-                player.sendMessage(ChatColor.GRAY + "花费: " + plugin.getEconomyManager().format(cost));
-                player.closeInventory();
+                Map<String, String> replacements = new HashMap<>();
+                replacements.put("description", newTask.getDescription());
+                replacements.put("cost", plugin.getEconomyManager().format(cost));
+                player.sendMessage(plugin.getMessageManager().getMessage("task.generated", replacements));
+                openTaskGUI(player); // 刷新任务界面
             } else {
                 // 如果任务生成失败，退还费用
                 plugin.getEconomyManager().deposit(player, cost);
                 player.sendMessage(ChatColor.RED + "任务生成失败！");
             }
-            */
         } else {
             player.sendMessage(ChatColor.RED + "扣费失败！");
         }

@@ -39,18 +39,34 @@ public class EconomyManager {
 
         // 尝试获取经济服务
         try {
+            // 获取经济服务提供者
             RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
             if (rsp == null) {
+                // 记录更多信息帮助诊断问题
+                plugin.getLogger().info("Vault插件已安装，但未找到经济系统提供商");
+                plugin.getLogger().info("已注册的经济服务提供商数量: " + Bukkit.getServicesManager().getRegistrations(Economy.class).size());
+                
                 plugin.getLogger().warning("未找到经济系统提供商，经济系统将不可用");
                 return false;
             }
 
+            // 获取经济实例
             economy = rsp.getProvider();
             
-            // 检查是否为CMI经济系统
+            // 获取经济系统名称
             String economyName = economy.getName();
+            
+            // 特殊处理EssentialsX（兼容旧版本）
+            if (economyName == null || economyName.isEmpty()) {
+                if (Bukkit.getPluginManager().getPlugin("Essentials") != null) {
+                    economyName = "EssentialsX";
+                    plugin.getLogger().info("检测到 EssentialsX 经济系统");
+                }
+            }
+            
+            // 检查是否为CMI经济系统（使用更精确的匹配）
             if (economyName != null) {
-                cmiEconomySupported = economyName.contains("CMI");
+                cmiEconomySupported = economyName.equalsIgnoreCase("cmi") || economyName.toLowerCase().contains(".cmi");
                 plugin.getLogger().info("经济系统已启用: " + economyName + 
                     (cmiEconomySupported ? " (检测到CMI经济系统)" : ""));
             } else {
@@ -58,8 +74,14 @@ public class EconomyManager {
             }
             
             return true;
+        } catch (NoClassDefFoundError e) {
+            plugin.getLogger().severe("缺少必要的Vault依赖，请确保正确安装了Vault插件");
+            plugin.getLogger().throwing("EconomyManager", "setupEconomy", e);
+            economy = null;
+            return false;
         } catch (Exception e) {
             plugin.getLogger().warning("设置经济系统时发生错误: " + e.getMessage() + "，经济系统将不可用");
+            plugin.getLogger().throwing("EconomyManager", "setupEconomy", e);
             economy = null;
             return false;
         }

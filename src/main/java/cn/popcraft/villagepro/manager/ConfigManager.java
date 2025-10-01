@@ -14,6 +14,8 @@ public class ConfigManager {
     private final VillagePro plugin;
     private final Map<UpgradeType, Map<Integer, Upgrade>> upgradeConfigs = new HashMap<>();
     private double recruitCostMoney;
+    private int recruitCostDiamonds;
+    private int recruitCostPoints;
     private int maxVillagers;
     private Map<String, Integer> recruitCostItems = new HashMap<>();
 
@@ -28,6 +30,8 @@ public class ConfigManager {
         
         // 加载招募配置
         recruitCostMoney = config.getDouble("recruit.cost-money", 5000);
+        recruitCostDiamonds = config.getInt("recruit.cost-diamonds", 0);
+        recruitCostPoints = config.getInt("recruit.cost-points", 0);
         maxVillagers = config.getInt("recruit.max-villagers", 5);
         
         // 加载招募所需物品
@@ -102,20 +106,31 @@ public class ConfigManager {
         plugin.getLogger().info("已加载 " + upgradeConfigs.size() + " 种升级类型配置");
     }
 
-    public Upgrade getUpgrade(UpgradeType type, int level) {
-        Map<Integer, Upgrade> levelMap = upgradeConfigs.get(type);
-        return levelMap != null ? levelMap.get(level) : null;
-    }
-
     public double getRecruitCostMoney() {
         return recruitCostMoney;
     }
-
+    
+    public int getRecruitCostDiamonds() {
+        return recruitCostDiamonds;
+    }
+    
+    public int getRecruitCostPoints() {
+        return recruitCostPoints;
+    }
+    
     public int getMaxVillagers() {
         return maxVillagers;
     }
-
+    
     public Map<String, Integer> getRecruitCostItems() {
         return recruitCostItems;
+    }
+    
+    public Upgrade getUpgrade(UpgradeType type, int level) {
+        Map<Integer, Upgrade> levelMap = upgradeConfigs.get(type);
+        if (levelMap != null) {
+            return levelMap.get(level);
+        }
+        return null;
     }
 }

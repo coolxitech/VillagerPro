@@ -4,6 +4,7 @@ import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.model.PlayerTaskData;
 import cn.popcraft.villagepro.model.Task;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -34,223 +35,26 @@ public class TaskManager {
     
     /**
      * 为玩家分配新任务
-     * 如果检测到Quests插件，则使用Quests系统
-     * 否则使用内置任务系统
+     * @param player 玩家
+     * @return 新任务
      */
     public Task assignNewTask(Player player) {
-        // 检查是否可以使用Quests系统
+        // 检查Quests插件是否可用
         if (plugin.getQuestsIntegrationManager().isQuestsAvailable()) {
-            // 使用Quests系统创建任务
-            return assignQuestsTask(player);
-        } else {
-            // 使用内置任务系统
-            return assignInternalTask(player);
-        }
-    }
-    
-    /**
-     * 使用Quests系统为玩家分配任务
-     */
-    private Task assignQuestsTask(Player player) {
-        // 生成随机任务类型
-        Task.TaskType randomType = getRandomTaskType();
-        
-        // 生成任务参数
-        int targetAmount;
-        double rewardMoney;
-        int rewardExp;
-        
-        // 根据任务类型设置参数
-        switch (randomType) {
-            case COLLECT_WHEAT:
-                targetAmount = 32 + plugin.getRandom().nextInt(32); // 32-63
-                rewardMoney = 100 + plugin.getRandom().nextInt(100); // 100-200
-                rewardExp = 50 + plugin.getRandom().nextInt(50); // 50-100
-                break;
-                
-            case KILL_ZOMBIE:
-                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
-                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
-                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
-                break;
-                
-            case DELIVER_POTION:
-                targetAmount = 3 + plugin.getRandom().nextInt(3); // 3-5
-                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
-                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
-                break;
-                
-            case MINE_IRON:
-                targetAmount = 16 + plugin.getRandom().nextInt(16); // 16-31
-                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
-                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
-                break;
-                
-            case MINE_DIAMOND:
-                targetAmount = 3 + plugin.getRandom().nextInt(3); // 3-5
-                rewardMoney = 500 + plugin.getRandom().nextInt(200); // 500-700
-                rewardExp = 200 + plugin.getRandom().nextInt(100); // 200-300
-                break;
-                
-            case BAKE_BREAD:
-                targetAmount = 16 + plugin.getRandom().nextInt(16); // 16-31
-                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
-                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
-                break;
-                
-            case KILL_SKELETON:
-                targetAmount = 8 + plugin.getRandom().nextInt(8); // 8-15
-                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
-                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
-                break;
-                
-            case KILL_CREEPER:
-                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
-                rewardMoney = 300 + plugin.getRandom().nextInt(150); // 300-450
-                rewardExp = 150 + plugin.getRandom().nextInt(100); // 150-250
-                break;
-                
-            case REACH_LEVEL:
-                targetAmount = 5 + plugin.getRandom().nextInt(10); // 5-15
-                rewardMoney = 250 + plugin.getRandom().nextInt(150); // 250-400
-                rewardExp = 125 + plugin.getRandom().nextInt(75); // 125-200
-                break;
-                
-            case FISH_ITEM:
-                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
-                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
-                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
-                break;
-                
-            case CRAFT_ITEM:
-                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
-                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
-                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
-                break;
-                
-            case ENCHANT_ITEM:
-                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
-                rewardMoney = 250 + plugin.getRandom().nextInt(150); // 250-400
-                rewardExp = 125 + plugin.getRandom().nextInt(75); // 125-200
-                break;
-                
-            case BREED_ANIMAL:
-                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
-                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
-                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
-                break;
-                
-            case HARVEST_CROP:
-                targetAmount = 32 + plugin.getRandom().nextInt(32); // 32-63
-                rewardMoney = 100 + plugin.getRandom().nextInt(100); // 100-200
-                rewardExp = 50 + plugin.getRandom().nextInt(50); // 50-100
-                break;
-                
-            case EXPLORE_BIOME:
-                targetAmount = 2 + plugin.getRandom().nextInt(2); // 2-3
-                rewardMoney = 400 + plugin.getRandom().nextInt(200); // 400-600
-                rewardExp = 200 + plugin.getRandom().nextInt(100); // 200-300
-                break;
-                
-            case TRADE_WITH_VILLAGER:
-                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
-                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
-                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
-                break;
-                
-            case COLLECT_WOOD:
-                targetAmount = 32 + plugin.getRandom().nextInt(32); // 32-63
-                rewardMoney = 100 + plugin.getRandom().nextInt(100); // 100-200
-                rewardExp = 50 + plugin.getRandom().nextInt(50); // 50-100
-                break;
-                
-            case MINE_STONE:
-                targetAmount = 64 + plugin.getRandom().nextInt(64); // 64-127
-                rewardMoney = 75 + plugin.getRandom().nextInt(75); // 75-150
-                rewardExp = 30 + plugin.getRandom().nextInt(30); // 30-60
-                break;
-                
-            case KILL_SPIDER:
-                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
-                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
-                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
-                break;
-                
-            case KILL_ENDERMAN:
-                targetAmount = 3 + plugin.getRandom().nextInt(3); // 3-5
-                rewardMoney = 400 + plugin.getRandom().nextInt(200); // 400-600
-                rewardExp = 200 + plugin.getRandom().nextInt(100); // 200-300
-                break;
-                
-            case COLLECT_FLOWER:
-                targetAmount = 32 + plugin.getRandom().nextInt(32); // 32-63
-                rewardMoney = 100 + plugin.getRandom().nextInt(100); // 100-200
-                rewardExp = 50 + plugin.getRandom().nextInt(50); // 50-100
-                break;
-                
-            case SHEAR_SHEEP:
-                targetAmount = 10 + plugin.getRandom().nextInt(10); // 10-20
-                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
-                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
-                break;
-                
-            case MILK_COW:
-                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
-                rewardMoney = 150 + plugin.getRandom().nextInt(100); // 150-250
-                rewardExp = 75 + plugin.getRandom().nextInt(50); // 75-125
-                break;
-                
-            case TAME_ANIMAL:
-                targetAmount = 3 + plugin.getRandom().nextInt(3); // 3-5
-                rewardMoney = 300 + plugin.getRandom().nextInt(150); // 300-450
-                rewardExp = 150 + plugin.getRandom().nextInt(100); // 150-250
-                break;
-                
-            case BREW_POTION:
-                targetAmount = 5 + plugin.getRandom().nextInt(5); // 5-10
-                rewardMoney = 200 + plugin.getRandom().nextInt(100); // 200-300
-                rewardExp = 100 + plugin.getRandom().nextInt(100); // 100-200
-                break;
-                
-            default:
-                // 默认值
-                targetAmount = 10;
-                rewardMoney = 100;
-                rewardExp = 50;
-                break;
+            // 使用Quests的随机任务功能
+            if (plugin.getQuestsIntegrationManager().assignRandomQuest(player)) {
+                player.sendMessage(ChatColor.GREEN + "已通过Quests插件分配随机任务!");
+                return null; // Quests任务不需要在我们的系统中跟踪
+            } else {
+                player.sendMessage(ChatColor.RED + "无法通过Quests插件分配任务!");
+            }
         }
         
-        // 调用Quests API创建任务
-        boolean success = plugin.getQuestsIntegrationManager().createQuest(
-            player, 
-            randomType.name(), 
-            targetAmount, 
-            rewardExp, 
-            rewardMoney
-        );
-        
-        if (success) {
-            // 创建一个临时的Task对象用于界面显示
-            Task questsTask = new Task(randomType, targetAmount, rewardMoney, rewardExp);
-            // 实际的任务管理由Quests插件处理
-            return questsTask;
-        } else {
-            // 如果Quests任务创建失败，回退到内置系统
-            return assignInternalTask(player);
-        }
-    }
-    
-    /**
-     * 使用内置系统为玩家分配任务
-     */
-    private Task assignInternalTask(Player player) {
-        // 生成随机任务类型
-        Task.TaskType randomType = getRandomTaskType();
-        
-        // 确保任务类型有效
-        while (!isValidTaskType(randomType)) {
+        // 如果Quests不可用或分配失败，使用内置任务系统
+        Task.TaskType randomType;
+        do {
             randomType = getRandomTaskType();
-        }
+        } while (!isValidTaskType(randomType));
         
         // 生成任务参数
         int targetAmount;
@@ -417,8 +221,25 @@ public class TaskManager {
                 break;
         }
         
-        // 创建并返回新任务
-        return new Task(randomType, targetAmount, rewardMoney, rewardExp);
+        // 创建新任务
+        Task newTask = new Task(randomType, targetAmount, rewardMoney, rewardExp);
+        
+        // 获取或创建玩家任务数据
+        PlayerTaskData playerTaskData = getOrCreatePlayerTaskData(player.getUniqueId());
+        
+        // 将任务设置为玩家的当前任务（这会自动添加到活跃任务列表中）
+        playerTaskData.setCurrentTask(newTask);
+        
+        // 保存玩家任务数据
+        savePlayerTaskData(playerTaskData);
+        
+        // 发送任务生成消息
+        Map<String, String> replacements = new HashMap<>();
+        replacements.put("description", newTask.getDescription());
+        player.sendMessage(plugin.getMessageManager().getMessage("task.generated", replacements));
+        
+        // 返回新创建的任务
+        return newTask;
     }
     
     /**
@@ -679,6 +500,31 @@ public class TaskManager {
         bar.append(String.format("%.1f", percentage)).append("%");
         
         return bar.toString();
+    }
+    
+    /**
+     * 增加玩家的任务积分
+     * @param playerUUID 玩家UUID
+     * @param points 要增加的积分数量
+     */
+    public void addTaskPoints(UUID playerUUID, int points) {
+        // 获取或创建玩家数据
+        PlayerTaskData data = getPlayerTaskData(playerUUID);
+        if (data == null) {
+            data = new PlayerTaskData(playerUUID);
+        }
+
+        // 增加积分
+        data.addTaskPoints(points);
+
+        // 保存数据
+        savePlayerTaskData(data);
+
+        // 如果玩家在线，可以发送消息
+        Player player = Bukkit.getPlayer(playerUUID);
+        if (player != null && player.isOnline()) {
+            player.sendMessage("§a获得 §b" + points + " §a任务积分！当前积分: §e" + data.getTaskPoints());
+        }
     }
     
     /**

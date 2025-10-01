@@ -2,6 +2,8 @@ package cn.popcraft.villagepro.command;
 
 import cn.popcraft.villagepro.VillagePro;
 import cn.popcraft.villagepro.manager.MessageManager;
+import cn.popcraft.villagepro.manager.VillageManager;
+
 import cn.popcraft.villagepro.model.UpgradeType;
 import cn.popcraft.villagepro.model.Village;
 import org.bukkit.command.Command;
@@ -148,7 +150,6 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
                 break;
             }
             
-            // 获取升级配置
             cn.popcraft.villagepro.model.Upgrade upgrade = plugin.getConfigManager().getUpgrade(type, level);
             if (upgrade == null) {
                 player.sendMessage(plugin.getMessageManager().getMessage("upgrade.failed"));
@@ -157,21 +158,22 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
             }
             
             // 检查资源是否足够
-            if (!plugin.getVillageManager().hasEnoughUpgradeResources(player, upgrade)) {
+            VillageManager.ResourceCheckResult checkResult = plugin.getVillageManager().checkUpgradeResources(player, upgrade);
+            if (!checkResult.success) {
                 player.sendMessage(plugin.getMessageManager().getMessage("upgrade.failed"));
                 success = false;
                 break;
             }
             
             // 消耗资源
-            plugin.getVillageManager().consumeUpgradeResources(player, upgrade);
+            plugin.getVillageManager().consumeUpgradeResources(player, checkResult);
             
             // 更新升级等级
             village.setUpgradeLevel(type, level);
             
             // 发送升级消息
             Map<String, String> replacements = new HashMap<>();
-            replacements.put("type", plugin.getMessageManager().getMessage("upgrade-types." + type.name()));
+            replacements.put("type", type.name());  // 直接使用枚举名称作为占位符值
             replacements.put("level", String.valueOf(level));
             player.sendMessage(plugin.getMessageManager().getMessage("upgrade.success", replacements));
         }
@@ -221,7 +223,7 @@ public class VillageCommand implements CommandExecutor, TabCompleter {
     private void sendHelpMessage(Player player) {
         List<String> helpMessages = messageManager.getMessageList("commands.village.help");
         for (String message : helpMessages) {
-            player.sendMessage(message);
+            player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', message));
         }
     }
 }

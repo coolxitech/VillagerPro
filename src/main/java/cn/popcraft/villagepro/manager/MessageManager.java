@@ -20,14 +20,11 @@ public class MessageManager {
     }
     
     private void loadMessages() {
-        // 保存默认消息配置文件
+        // 保存默认消息配置文件（强制覆盖）
         saveDefaultMessages();
         
         // 加载消息配置
         File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
-        if (!messagesFile.exists()) {
-            plugin.saveResource("messages.yml", false);
-        }
         
         messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
         
@@ -41,8 +38,8 @@ public class MessageManager {
     }
     
     private void saveDefaultMessages() {
-        // 保存默认消息配置
-        plugin.saveResource("messages.yml", false);
+        // 保存默认消息配置（强制覆盖）
+        plugin.saveResource("messages.yml", true);
     }
     
     private void loadDefaultMessages() {
