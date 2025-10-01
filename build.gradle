@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     implementation 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT'
-    implementation 'org.xerial:sqlite-jdbc:3.42.0.0'
+    implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     compileOnly 'org.jetbrains:annotations:24.0.0'
     compileOnly group: 'net.milkbowl.vault', name: 'VaultAPI', version: '1.7'
