@@ -23,7 +23,7 @@ dependencies {
     compileOnly 'org.jetbrains:annotations:24.0.0'
     compileOnly group: 'net.milkbowl.vault', name: 'VaultAPI', version: '1.7'
     annotationProcessor group: 'net.milkbowl.vault', name: 'VaultAPI', version: '1.7'
-    compileOnly 'com.github.PikaMug:Quests:5.2.5'
+    compileOnly 'com.github.PikaMug:Quests:5.2.6'
 }
 
 java {
